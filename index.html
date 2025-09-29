@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-	<meta name="viewport" content="width=1024">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>PRISTINE PEARL PHARMA - Sales Return Manager</title>
   <link rel="icon" 
@@ -639,8 +638,11 @@
           <option value="Sales Return">Sales Return</option>
         </select>
       </div>
-      
-      <div class="full">
+<div>
+      <label>SR REF NO.</label>
+      <input type="text" name="memberID" id="memberID" readonly="">
+</div>
+      <div class = full>
         <label> <Strong> PRODUCT DETAILS </Strong> </label>
         <table id="itemsTable">
           <thead>
@@ -685,7 +687,7 @@
   </div>
   <script>
     // ** IMPORTANT: Replace this with your actual Google Apps Script Web App URL **
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbyscGREdRBojPwM4BYmMKcw5RRGN2O4TkSHnSxPgriBLoixETBYXoVZ5oT77_CMvL0Q/exec';
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbziC3U1Yds6bbc6XkliQdpctIoajspM1upHOUFQ5_V9t0yIkSkuJt_XyaxXG1b6ac-H/exec';
     const stockistEl = document.getElementById('stockist');
     const submitBtn = document.getElementById('submitToSheet');
     const uploadStatus = document.getElementById('uploadStatus');
@@ -694,7 +696,6 @@
     const formFields = document.querySelectorAll('input, select, textarea');
     const totalValueDisplay = document.getElementById('totalValueDisplay');
     const returnNatureEl = document.getElementById('returnNature'); // New element reference
-
     stockistEl.addEventListener('change', (e)=>{
       const sel = stockistEl.selectedOptions[0];
       document.getElementById('stockistCode').value = sel ? sel.value : '';
@@ -739,6 +740,23 @@
         input.value = '0.00';
         return input;
     }
+    const memberIDInput = document.getElementById("memberID");
+    function getUniqueMemberID() {
+      let usedIDs = JSON.parse(localStorage.getItem("usedIDs") || "[]");
+      let newID;
+
+      do {
+        const randomNum = Math.floor(10000 + Math.random() * 90000);
+        newID = "SR" + randomNum;
+      } while (usedIDs.includes(newID));
+
+      usedIDs.push(newID);
+      localStorage.setItem("usedIDs", JSON.stringify(usedIDs));
+      return newID;
+    }
+
+    memberIDInput.value = getUniqueMemberID();
+
     
     // Function to format the expiry input (MM/YY) - Kept for existing functionality
     function formatExpiryInput(input) {
@@ -877,11 +895,11 @@
 
     function collectData() {
         const returnNature = returnNatureEl.value; // Get the single nature value
-        
+  
         const rows = Array.from(itemsTable.rows).map(row => ({
             prod: row.querySelector('.product-select').value,
-            nature: returnNature, // Use the single nature value for all rows
-            batch: row.querySelector('.batch-input').value,
+            nature: returnNature, // Use the single nature value for all rows            
+batch: row.querySelector('.batch-input').value,
             expiry: row.querySelector('.expiry-input').value, // This value is already in MM/YY format
             qty: row.querySelector('.qty-input').value,
             rate: row.querySelector('.rate-input').value,
@@ -901,6 +919,7 @@
         const team = document.getElementById('team').value;
         const noOfBoxes = noOfBoxesEl.value;
         const grandTotal = totalValueDisplay.textContent;
+ const memberID = document.getElementById('memberID').value;
         
         if (!cInvDate || !cInvNo || !stockistName) {
             alert("Please fill C.Inv Date, C.Inv No., and Stockist Name.");
@@ -911,14 +930,14 @@
             return null;
         }
 
-        return { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature };
+        return { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID };
     }
 
     function generatePreview() {
         const data = collectData();
         if (!data) return;
 
-        const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature } = data;
+        const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID } = data;
         
         // Reformat date from YYYY-MM-DD to DD-MM-YYYY
         const [year, month, day] = cInvDate.split('-');
@@ -933,9 +952,9 @@
                 <div class="report-header">
                     <div class="report-meta-item"><strong>Stockist Name:</strong> ${stockistName}</div>
                     <div class="report-meta-item"><strong>C.Inv No.:</strong> ${cInvNo}</div>
-                    <div class="report-meta-item"><strong>C.Inv Date:</strong> ${formattedDate}</div>
-                    
+                    <div class="report-meta-item"><strong>C.Inv Date:</strong> ${formattedDate}</div>                          <div class="report-meta-item"><strong>SR REF NO.</strong>${data.memberID}</div>
                     <div class="report-meta-item"><strong>Stockist Code:</strong> ${stockistCode}</div>
+
                     <div class="report-meta-item"><strong>Nature:</strong> ${returnNature}</div>
                     <div class="report-meta-item"><strong>Area/State:</strong> ${area} / ${team}</div>
                     <div class="report-meta-item"><strong>No. of Boxes:</strong> ${noOfBoxes} </div>
@@ -991,7 +1010,7 @@
         const data = collectData();
         if (!data) return;
         
-        const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature } = data;
+        const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID } = data;
 
         const dateObj = new Date(cInvDate + 'T00:00:00');
         const selectedDateFormatted = String(dateObj.getDate()).padStart(2,'0') + '-' + String(dateObj.getMonth()+1).padStart(2,'0') + '-' + dateObj.getFullYear();
@@ -999,8 +1018,7 @@
         const now = new Date();
         const generatedDateTime = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
         
-        const formData = {
-            cInvDate: selectedDateFormatted,
+        const formData = { cInvDate: selectedDateFormatted, memberID: data.memberID,
             cInvNo: cInvNo,
             noOfBoxes: noOfBoxes,
             totalValue: grandTotal,
@@ -1067,7 +1085,7 @@
       const data = collectData();
       if (!data) return;
 
-      const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature } = data;
+      const { rows, memberID, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature } = data;
       
       const dateObj = new Date(cInvDate + 'T00:00:00');
       const selectedDateFormatted = String(dateObj.getDate()).padStart(2,'0') + '-' + String(dateObj.getMonth()+1).padStart(2,'0') + '-' + dateObj.getFullYear();
@@ -1076,12 +1094,12 @@
 
       let excelData = [];
       // Updated header: Nature column is present, but values will be the single value
-      excelData.push(["C.Inv Date","C.Inv No.","No. of Boxes","Total Value","Report Generated","Stockist","Stockist Code","Area","Team","S.No","Product","Nature","Batch","Expiry","Qty","Rate","GST %","Taxable Val","GST Val","Total Val","Item Remarks"]);
+      excelData.push(["SR REF NO.", "C.Inv Date","C.Inv No.","No. of Boxes","Total Value","Report Generated","Stockist","Stockist Code","Area","Team","S.No","Product","Nature","Batch","Expiry","Qty","Rate","GST %","Taxable Val","GST Val","Total Val","Item Remarks"]);
       
       rows.forEach((r,i)=>{
         let exp = r.expiry || ""; // FIX 3: Directly use r.expiry (e.g., "12/25")
         excelData.push([
-          selectedDateFormatted, cInvNo, noOfBoxes, grandTotal, generatedDateTime, 
+          data.memberID, selectedDateFormatted, cInvNo, noOfBoxes, grandTotal, generatedDateTime, 
           stockistName, stockistCode, area, team, i+1, r.prod, returnNature, r.batch, exp, 
           r.qty, r.rate, r.gstPercent, r.taxableValue, r.gstValue, r.totalValue, r.remarks
         ]);
@@ -1095,7 +1113,7 @@
 
     function generatePlainTextReport(data) {
         if (!data) return "";
-        const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature } = data;
+        const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID } = data;
         
         let plainText = `PRISTINE PEARL PHARMA PVT LTD - SALES RETURN REPORT\n\n`;
         plainText += `Stockist: ${stockistName} (${stockistCode})\n`;
