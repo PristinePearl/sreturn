@@ -1108,7 +1108,7 @@ batch: row.querySelector('.batch-input').value,
       const ws = XLSX.utils.aoa_to_sheet(excelData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Report");
-      XLSX.writeFile(wb, `${stockistName.replace(/\s+/g,'_')}_SR_${selectedDateFormatted}.xlsx`);
+      XLSX.writeFile(wb, `${stockistName.replace(/\s+/g,'_')}_${selectedDateFormatted}-Pristine.xlsx`);
     }
 
     function generatePlainTextReport(data) {
