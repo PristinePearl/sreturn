@@ -407,11 +407,11 @@
         <form class="search-form" id="dateStockistForm">
             <div class="form-group">
                 <label for="fromDate">From Date (C. INV DATE):</label>
-                <input type="date" id="fromDate" required>
+                <input type="date" id="fromDate">
             </div>
             <div class="form-group">
                 <label for="toDate">To Date (C. INV DATE):</label>
-                <input type="date" id="toDate" required>
+                <input type="date" id="toDate">
             </div>
             <div class="form-group">
                 <label for="stockistSelect">Stockist Name:</label>
@@ -782,7 +782,7 @@
         });
 
 
-        // Handle Date + Stockist Form
+        // Handle Date + Stockist Form (UPDATED TO ALLOW ALL DATA WITH NO FILTERS)
         document.getElementById('dateStockistForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const sheetId = document.getElementById('sheetId').value.trim();
@@ -798,38 +798,54 @@
             lastFilterResults = []; // Reset filtered results
             window.groupedResults = {}; // Reset grouped results
 
-            if (!sheetId || !fromDate || !toDate) {
-                resultsSection.innerHTML = '<div class="error">Please enter Google Sheet ID and select From and To dates.</div>';
+            if (!sheetId) {
+                resultsSection.innerHTML = '<div class="error">Please enter Google Sheet ID.</div>';
                 return;
             }
+            
+            // --- MODIFIED LOGIC: No longer checks if a filter is mandatory. 
+            // If both dates and stockist are empty, the filter logic below will return ALL records.
+            const isDateRangeSet = fromDate && toDate;
+            const isStockistSelected = !!stockist;
 
+            // Prepare dates for comparison if they are set
+            let from = null;
+            let to = null;
+            if (isDateRangeSet) {
+                from = new Date(fromDate); 
+                from.setHours(0, 0, 0, 0); 
+                to = new Date(toDate);
+                to.setHours(23, 59, 59, 999);
+            }
+            
             resultsSection.innerHTML = '<div class="loading">Searching by date & stockist...</div>';
 
             try {
                 const data = await fetchSheetData(sheetId);
                 
-                const from = new Date(fromDate); 
-                from.setHours(0, 0, 0, 0); 
-                const to = new Date(toDate);
-                to.setHours(23, 59, 59, 999);
-                
                 const filtered = data.filter(row => {
-                    const cInvDateValue = row['C. INV DATE']; 
-                    if (!cInvDateValue) return false; 
+                    // 1. Stockist Filter (Applied only if selected)
+                    if (isStockistSelected && row['STOCKIST NAME'] !== stockist) {
+                        return false;
+                    }
                     
-                    const parts = cInvDateValue.split('/');
-                    if (parts.length < 3) return false;
+                    // 2. Date Range Filter (Applied only if both dates are set)
+                    if (isDateRangeSet) {
+                        const cInvDateValue = row['C. INV DATE']; 
+                        if (!cInvDateValue) return false; 
+                        
+                        const parts = cInvDateValue.split('/');
+                        if (parts.length < 3) return false;
 
-                    // Parse date from DD/MM/YYYY format
-                    const uploaded = new Date(parts[2], parts[1] - 1, parts[0]);
-                    uploaded.setHours(12, 0, 0, 0); 
+                        // Parse date from DD/MM/YYYY format
+                        const uploaded = new Date(parts[2], parts[1] - 1, parts[0]);
+                        uploaded.setHours(12, 0, 0, 0); 
 
-                    if (isNaN(uploaded.getTime())) return false; 
-                    
-                    if (uploaded.getTime() < from.getTime() || uploaded.getTime() > to.getTime()) return false;
+                        if (isNaN(uploaded.getTime())) return false; 
+                        
+                        if (uploaded.getTime() < from.getTime() || uploaded.getTime() > to.getTime()) return false;
+                    }
 
-                    if (stockist && row['STOCKIST NAME'] !== stockist) return false;
-                    
                     return true;
                 });
 
