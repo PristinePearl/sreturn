@@ -96,7 +96,7 @@
             margin-left: 8px;
         }
 
-        /* --- Tabs Styling --- */
+        /* --- Tabs Styling (NEW) --- */
         .tabs {
             display: flex;
             flex-direction: column;
@@ -413,46 +413,6 @@
             padding-bottom: 5px;
             border-bottom: 1px solid #e2e8f0;
         }
-        /* Pivot Table Specific Styles */
-        .pivot-table-container {
-            margin-top: 20px;
-            overflow-x: auto;
-        }
-        .pivot-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            min-width: 600px;
-        }
-        .pivot-table th, .pivot-table td {
-            border: 1px solid #e5e7eb;
-            padding: 8px;
-            text-align: right; /* Values right aligned */
-        }
-        .pivot-table th {
-            background-color: #f3f4f6;
-            font-weight: 600;
-            color: #1f2937;
-            text-transform: capitalize;
-            text-align: center;
-        }
-        .pivot-table .row-header {
-            text-align: left;
-            background-color: #f9fafb;
-            font-weight: 500;
-            color: #1e3c72;
-        }
-        .pivot-table .grand-total-row th, 
-        .pivot-table .grand-total-col {
-            background-color: #e0f2f1; /* Light teal for totals */
-            font-weight: 700;
-            color: #004d40;
-            text-align: right;
-        }
-        .pivot-table .grand-total-cell {
-            background-color: #b2dfdb; /* Darker teal for grand total cell */
-        }
-
 
 
         /* Responsive Design */
@@ -517,7 +477,6 @@
         <button class="tab-button" onclick="openTab(event, 'productAnalysis')">📦 Product Analysis</button>
         <button class="tab-button" onclick="openTab(event, 'expiryQuality')">⚠️ Expiry/Quality Report</button>
         <button class="tab-button" onclick="openTab(event, 'graphicalReports')">📊 Graphical Reports</button>
-        <button class="tab-button" onclick="openTab(event, 'pivotReport')">⛭ Pivot Table</button>
     </div>
 
     <div class="search-section">
@@ -631,63 +590,6 @@
                 <button type="button" class="btn btn-secondary" id="exportChartBtn" style="display: none;">EXPORT RAW DATA</button>
             </form>
         </div>
-        
-        <div id="pivotReport" class="tab-content">
-            <form class="search-form" id="pivotForm">
-                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #1e3c72;">Dynamic Pivot Table Creator</h3>
-                <div class="form-group">
-                    <label for="pivotRowField">Row Field (e.g., Stockist, Product):</label>
-                    <select id="pivotRowField" required>
-                        <option value="PRODUCT">Product</option>
-                        <option value="STOCKIST NAME">Stockist Name</option>
-                        <option value="AREA">Area</option>
-                        <option value="STATE">State</option>
-                        <option value="BATCH">Batch</option>
-                        <option value="REMARKS">Remarks</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="pivotColField">Column Field (e.g., Date, State):</label>
-                    <select id="pivotColField" required>
-                        <option value="C. INV DATE_YEAR">C. Inv Date (Year)</option>
-                        <option value="C. INV DATE_MONTH">C. Inv Date (Month)</option>
-                        <option value="STATE">State</option>
-                        <option value="AREA">Area</option>
-                        <option value="REMARKS">Remarks</option>
-                        <option value="NONE">No Column (Single Column Total)</option>
-                    </select>
-                </div>
-                 <div class="form-group" style="display: flex; flex-direction: row; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label for="pivotValueField">Value Field:</label>
-                        <select id="pivotValueField" required>
-                            <option value="TOTAL">Total Return Value</option>
-                            <option value="QTY">Quantity Returned</option>
-                            <option value="TAXABLE">Taxable Value</option>
-                            <option value="GST VALUE">GST Value</option>
-                        </select>
-                    </div>
-                    <div style="flex: 1;">
-                        <label for="pivotAggType">Aggregation:</label>
-                        <select id="pivotAggType" required>
-                            <option value="SUM">SUM</option>
-                            <option value="COUNT">COUNT</option>
-                            <option value="AVERAGE">AVERAGE</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="pivotFilterDateRange">Filter by Date Range (C. INV DATE):</label>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="date" id="pivotFromDate" style="flex: 1;" placeholder="From Date">
-                        <input type="date" id="pivotToDate" style="flex: 1;" placeholder="To Date">
-                    </div>
-                </div>
-                <button type="submit" class="btn">Generate Pivot Table</button>
-                <button type="button" class="btn btn-secondary" id="exportPivotBtn" style="display: none;">EXPORT PIVOT DATA</button>
-            </form>
-        </div>
     </div>
 </div>
 
@@ -702,13 +604,12 @@
         // Global variables for storing results for export functions
         let lastSearchResults = []; // For single SR search
         let lastFilterResults = []; // For all tabular/graphical report exports
-        let lastPivotResults = []; // NEW: For pivot table export
         window.groupedResults = {}; // To store the grouped data for in-card export
         
         let barChartInstance = null;
         let pieChartInstance = null;
 
-        // --- Core Tab Navigation Function ---
+        // --- Core Tab Navigation Function (NEW) ---
         function openTab(evt, tabName) {
             // Declare all variables
             let i, tabcontent, tablinks;
@@ -1104,7 +1005,6 @@
             document.getElementById('exportProductBtn').style.display = 'none';
             document.getElementById('exportExpiryBtn').style.display = 'none';
             document.getElementById('exportChartBtn').style.display = 'none';
-            document.getElementById('exportPivotBtn').style.display = 'none'; // NEW: Hide Pivot Export
         }
         
         // Handle Search by SR Ref No
@@ -1176,14 +1076,6 @@
                 exportToCSV(lastFilterResults, `SR_ChartReport_RawData_${today}`);
             } else {
                  alert("No data to export. Please run a report search first.");
-            }
-        });
-        document.getElementById('exportPivotBtn').addEventListener('click', function() { // NEW: Pivot Export Handler
-             if (lastPivotResults.length > 0) {
-                const today = new Date().toISOString().slice(0, 10);
-                exportToCSV(lastPivotResults, `SR_PivotTable_Data_${today}`);
-            } else {
-                 alert("No pivot data to export. Please generate the pivot table first.");
             }
         });
 
@@ -1396,7 +1288,7 @@
             }
         });
         
-        // Handle Product & Stockist Graphical Report
+        // Handle Product & Stockist Graphical Report (NEW)
         document.getElementById('chartReportForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const sheetId = document.getElementById('sheetId').value.trim();
@@ -1461,7 +1353,7 @@
                 lastFilterResults = filtered;
                 document.getElementById('exportChartBtn').style.display = 'block';
 
-                generateChartReport(filtered, filterProduct, filterStockist);
+                generateChartReport(filtered, product, stockist);
 
             } catch (err) {
                 resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
@@ -1569,289 +1461,6 @@
                 }
             });
 
-        }
-        
-        
-        // --- PIVOT TABLE LOGIC (NEW) ---
-
-        // Function to extract the C. INV DATE components for column grouping
-        function getDateKey(row, keyType) {
-            const dateStr = row['C. INV DATE'];
-            if (!dateStr) return 'N/A';
-            const parts = dateStr.split('/'); // DD/MM/YYYY
-            if (parts.length !== 3) return 'N/A';
-
-            const day = parts[0];
-            const month = parts[1];
-            const year = parts[2];
-            
-            if (keyType === 'C. INV DATE_YEAR') return year;
-            if (keyType === 'C. INV DATE_MONTH') return `${month}/${year}`; // MM/YYYY
-            return 'N/A';
-        }
-
-        // Function to normalize the value field (convert currency string to float)
-        function normalizeValue(value) {
-            if (typeof value === 'string') {
-                return parseFloat(value.replace(/[^0-9.-]+/g,"")) || 0;
-            }
-            return parseFloat(value) || 0;
-        }
-
-
-        // Handle Pivot Table Form Submission
-        document.getElementById('pivotForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const sheetId = document.getElementById('sheetId').value.trim();
-            const rowField = document.getElementById('pivotRowField').value;
-            const colField = document.getElementById('pivotColField').value;
-            const valueField = document.getElementById('pivotValueField').value;
-            const aggType = document.getElementById('pivotAggType').value;
-            const fromDateStr = document.getElementById('pivotFromDate').value;
-            const toDateStr = document.getElementById('pivotToDate').value;
-            const resultsSection = document.getElementById('resultsSection');
-
-            hideAllExportButtons();
-            destroyCharts();
-
-            if (!sheetId) {
-                resultsSection.innerHTML = '<div class="error">Please enter Google Sheet ID.</div>';
-                return;
-            }
-
-            resultsSection.innerHTML = '<div class="loading">Generating Pivot Table...</div>';
-
-            try {
-                const data = await fetchSheetData(sheetId);
-                
-                // 1. Apply Date Filtering
-                const isDateRangeSet = fromDateStr && toDateStr;
-                let from = null;
-                let to = null;
-                if (isDateRangeSet) {
-                    from = new Date(fromDateStr); 
-                    from.setHours(0, 0, 0, 0); 
-                    to = new Date(toDateStr);
-                    to.setHours(23, 59, 59, 999);
-                }
-
-                const filteredData = data.filter(row => {
-                    if (isDateRangeSet) {
-                        const cInvDate = parseDate(row['C. INV DATE']);
-                        if (!cInvDate || cInvDate.getTime() < from.getTime() || cInvDate.getTime() > to.getTime()) {
-                            return false;
-                        }
-                    }
-                    return true;
-                });
-
-                if (filteredData.length === 0) {
-                    resultsSection.innerHTML = '<div class="no-results">No records found for the given filter criteria.</div>';
-                    return;
-                }
-
-                // 2. Core Pivot Logic
-                const pivotData = {};
-                const uniqueColKeys = new Set();
-                let recordCount = 0;
-
-                filteredData.forEach(row => {
-                    const rowKey = row[rowField] || 'N/A';
-                    let colKey = 'Total'; // Default key if colField is 'NONE'
-                    
-                    if (colField === 'C. INV DATE_YEAR' || colField === 'C. INV DATE_MONTH') {
-                        colKey = getDateKey(row, colField);
-                    } else if (colField !== 'NONE') {
-                        colKey = row[colField] || 'N/A';
-                    }
-
-                    // Ignore rows with 'N/A' as the primary row key
-                    if (rowKey === 'N/A' && rowField !== 'REMARKS') return;
-
-
-                    const val = normalizeValue(row[valueField]);
-                    recordCount++;
-
-                    // Add column key to the set
-                    if (colField !== 'NONE' && colKey !== 'N/A') uniqueColKeys.add(colKey);
-
-                    // Initialize the row in pivotData if it doesn't exist
-                    if (!pivotData[rowKey]) {
-                        pivotData[rowKey] = { __rowTotal: { sum: 0, count: 0 }, __export: { key: rowKey } };
-                    }
-                    
-                    // Initialize the column key for this row
-                    if (!pivotData[rowKey][colKey]) {
-                        pivotData[rowKey][colKey] = { sum: 0, count: 0 };
-                    }
-
-                    // Perform aggregation calculations
-                    pivotData[rowKey][colKey].sum += val;
-                    // For non-count aggregation, we count non-zero values for average calculation
-                    pivotData[rowKey][colKey].count += (aggType === 'COUNT' ? 1 : (val !== 0 ? 1 : 0)); 
-                    
-                    // Update row total
-                    pivotData[rowKey].__rowTotal.sum += val;
-                    pivotData[rowKey].__rowTotal.count += (aggType === 'COUNT' ? 1 : (val !== 0 ? 1 : 0));
-                });
-                
-                // Sort column keys, special handling for MONTH to sort chronologically
-                let sortedColKeys = Array.from(uniqueColKeys);
-                if (colField === 'C. INV DATE_MONTH') {
-                    // Sort MM/YYYY chronologically
-                    sortedColKeys.sort((a, b) => {
-                        const [m1, y1] = a.split('/').map(Number);
-                        const [m2, y2] = b.split('/').map(Number);
-                        if (y1 !== y2) return y1 - y2;
-                        return m1 - m2;
-                    });
-                } else {
-                     // Sort alphabetically for other fields
-                    sortedColKeys.sort();
-                }
-
-                // Ensure 'Total' is included if 'NONE' was selected for column field
-                if (colField === 'NONE' && !sortedColKeys.includes('Total')) {
-                    sortedColKeys = ['Total'];
-                }
-
-                // 3. Generate HTML and Export Data
-                generatePivotHtml(rowField, colField, valueField, aggType, pivotData, sortedColKeys, recordCount);
-
-            } catch (err) {
-                resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
-            }
-        });
-
-
-        function generatePivotHtml(rowField, colField, valueField, aggType, pivotData, sortedColKeys, totalRecords) {
-            const resultsSection = document.getElementById('resultsSection');
-            const exportBtn = document.getElementById('exportPivotBtn');
-
-            // --- PIVOT TABLE FORMATTING FIX (Quantity as Number) ---
-            // Determine if the value being displayed is monetary (Total, Taxable, GST Value) AND NOT a Count aggregation
-            const isMonetary = (valueField === 'TOTAL' || valueField === 'TAXABLE' || valueField === 'GST VALUE') && aggType !== 'COUNT';
-            const decimalPlaces = isMonetary ? 2 : 0; 
-            
-            // Central function for formatting display values
-            const formatValue = (value) => {
-                if (value === 0) return '-';
-                
-                // If monetary, apply currency and two decimals
-                if (isMonetary) {
-                    return `₹${value.toFixed(decimalPlaces)}`;
-                } else {
-                    // If QTY or COUNT, format as whole number (toLocaleString handles commas)
-                    return value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-                }
-            };
-            // --- END FORMATTING FIX ---
-
-
-            lastPivotResults = []; // Reset export data
-
-            // 1. Build Table Header
-            const valueLabel = `${aggType} of ${valueField.replace('C. INV DATE_', '')}`;
-            let tableHtml = `
-                <h2 style="font-size: 1.2rem; color: #1e3c72; padding: 10px 0; border-bottom: 2px solid #e5e7eb; margin-bottom: 15px;">
-                    Pivot Table: ${valueLabel} by ${rowField} and ${colField === 'NONE' ? 'Grand Total' : colField.replace('C. INV DATE_', '')}
-                </h2>
-                <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 15px;">
-                    Total Records Analyzed: ${totalRecords.toLocaleString()}
-                </p>
-                <div class="pivot-table-container">
-                    <table class="pivot-table">
-                        <thead>
-                            <tr>
-                                <th class="row-header" style="text-align: left; min-width: 150px;">${rowField}</th>
-                                ${sortedColKeys.map(key => `<th>${key}</th>`).join('')}
-                                <th style="min-width: 100px;">Row Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            // 2. Build Table Rows and Calculate Column Totals
-            const colTotals = {};
-            let grandTotalSum = 0; // Tracks sum for all data points
-            let grandTotalCount = 0; // Tracks total count for all data points (for overall average)
-            const sortedRowKeys = Object.keys(pivotData).sort();
-
-            sortedRowKeys.forEach(rowKey => {
-                const rowData = pivotData[rowKey];
-                
-                // Prepare row for export
-                const exportRow = { [rowField]: rowKey };
-
-                let rowHtml = `<tr><td class="row-header">${rowKey}</td>`;
-
-                sortedColKeys.forEach(colKey => {
-                    const cell = rowData[colKey] || { sum: 0, count: 0 };
-                    
-                    let value = 0;
-                    if (aggType === 'SUM') value = cell.sum;
-                    else if (aggType === 'COUNT') value = cell.count;
-                    else if (aggType === 'AVERAGE' && cell.count > 0) value = cell.sum / cell.count;
-
-                    // Update column total (using raw sum/count)
-                    colTotals[colKey] = colTotals[colKey] || { sum: 0, count: 0 };
-                    colTotals[colKey].sum += cell.sum;
-                    colTotals[colKey].count += cell.count;
-
-                    // Add value to export row and HTML
-                    const displayValue = formatValue(value);
-                    exportRow[colKey] = value.toFixed(decimalPlaces);
-                    rowHtml += `<td>${displayValue}</td>`;
-                });
-
-                // Calculate Row Total Value
-                const rowTotalData = rowData.__rowTotal;
-                let rowTotalValue = 0;
-                if (aggType === 'SUM') rowTotalValue = rowTotalData.sum;
-                else if (aggType === 'COUNT') rowTotalValue = rowTotalData.count;
-                else if (aggType === 'AVERAGE' && rowTotalData.count > 0) rowTotalValue = rowTotalData.sum / rowTotalData.count;
-
-                grandTotalSum += rowTotalData.sum;
-                grandTotalCount += rowTotalData.count;
-
-                const displayRowTotal = formatValue(rowTotalValue);
-                exportRow['Row Total'] = rowTotalValue.toFixed(decimalPlaces);
-
-                rowHtml += `<td class="grand-total-col">${displayRowTotal}</td></tr>`;
-                tableHtml += rowHtml;
-                
-                lastPivotResults.push(exportRow);
-            });
-
-            // 3. Build Footer (Grand Totals)
-            let footerHtml = `<tr class="grand-total-row"><th style="text-align: left;">Column Total</th>`;
-
-            // Loop through column totals
-            
-            sortedColKeys.forEach(key => {
-                const totalData = colTotals[key];
-                let value = 0;
-                if (aggType === 'SUM') value = totalData.sum;
-                else if (aggType === 'COUNT') value = totalData.count;
-                else if (aggType === 'AVERAGE' && totalData.count > 0) value = totalData.sum / totalData.count;
-                
-                const displayValue = formatValue(value);
-                footerHtml += `<th class="grand-total-row">${displayValue}</th>`;
-            });
-            
-            // Grand Total Cell (Overall Aggregate)
-            let finalGrandValue = 0;
-            if (aggType === 'SUM') finalGrandValue = grandTotalSum;
-            else if (aggType === 'COUNT') finalGrandValue = grandTotalCount;
-            else if (aggType === 'AVERAGE' && grandTotalCount > 0) finalGrandValue = grandTotalSum / grandTotalCount;
-            
-            const displayGrandTotal = formatValue(finalGrandValue);
-            footerHtml += `<th class="grand-total-row grand-total-cell">${displayGrandTotal}</th></tr>`;
-
-            tableHtml += `</tbody><tfoot>${footerHtml}</tfoot></table></div>`;
-            
-            resultsSection.innerHTML = tableHtml;
-            exportBtn.style.display = 'block';
         }
 
 
