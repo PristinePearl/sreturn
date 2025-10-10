@@ -29,9 +29,9 @@
       background: var(--background-color);
       color: var(--text-color);
       line-height: 1.6;
-
+  
   }
-
+    
     /* 2. CARD STYLING */
     .card{
       background: var(--card-bg);
@@ -41,7 +41,7 @@
       max-width: 1100px; /* Slightly wider max-width for better item table space */
       margin: 0 auto;
     }
-
+    
     /* 3. HEADINGS & LABELS */
     h1{
       font-size: 24px;
@@ -59,7 +59,7 @@
       margin-bottom: 4px;
       text-transform: uppercase; /* Clearer labels */
     }
-
+    
     /* 4. FORM INPUTS & SELECTS */
     .grid{
       display: grid;
@@ -95,7 +95,7 @@
     .full{grid-column:span 4} /* Updated span for 4-column grid */
     @media(max-width:1000px){.full{grid-column:span 2}}
     @media(max-width:600px){.full{grid-column:span 1}}
-
+    
     /* 5. TABLE STYLING */
     table{
       width: 100%;
@@ -148,7 +148,7 @@
     .item-row td:nth-child(6), .item-row td:nth-child(7), .item-row td:nth-child(8), .item-row td:nth-child(9), .item-row td:nth-child(10) {
         text-align: right;
     }
-
+    
     /* 7. BUTTONS & ACTIONS */
     .actions{
       display: flex;
@@ -235,7 +235,7 @@
       box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05); /* Inner shadow for depth */
       color: var(--text-color);
     }
-
+    
     /* 9. STATUS MESSAGE */
     .status-message {
       font-weight: 500;
@@ -244,7 +244,7 @@
       font-size: 15px;
       display: inline-block;
     }
-
+    
     /* 10. TOTAL VALUE DISPLAY */
     .total-value-container {
         margin-top: 15px;
@@ -281,7 +281,7 @@
     }
 
     /* 12. NEW, IMPROVED PREVIEW/REPORT STYLES */
-
+    
     /* --- Main Company Header (New) --- */
     .report-company-name {
         text-align: center;
@@ -291,7 +291,7 @@
         margin-bottom: 5px;
         text-transform: uppercase;
     }
-
+    
     /* --- Report Title (Modified per user request: Large and Bold) --- */
     .report-title {
         text-align: center;
@@ -303,7 +303,7 @@
         border-bottom: 1px solid #ddd;
         text-transform: uppercase;
     }
-
+    
     /* --- Report Metadata (Modified) --- */
     .report-header {
         display: grid;
@@ -328,7 +328,7 @@
         font-size: 11px;
         margin-bottom: 2px;
     }
-
+    
     /* --- Report Table (Modified) --- */
     .report-table {
         margin-top: 10px;
@@ -626,12 +626,12 @@
         <label for="team">STATE</label>
         <input id="team" type="text" readonly>
       </div>
-
+      
       <div> 
         <label for="noOfBoxes">NO. OF BOXES</label>
         <input id="noOfBoxes" type="number" min="0" placeholder="Enter approx no. of boxes returned">
       </div>
-
+      
       <div>
         <label for="returnNature">NATURE</label>
         <select id="returnNature" disabled>
@@ -651,8 +651,6 @@
               <th style="width:180px">PRODUCT NAME</th>
               <th style="width:90px">BATCH</th>
               <th style="width:80px">EXPIRY</th>
-              <th style="width:100px">QTY</th>
-              <th style="width:100px">RATE</th>
               <th style="width:90px">QTY</th>
               <th style="width:90px">RATE</th>
               <th style="width:70px">GST %</th>
@@ -670,13 +668,13 @@
           <button id="clearRows" type="button" class="ghost small">DELETE ALL</button>
         </div>
       </div>
-
+      
       <div class="full right">
         <div class="total-value-container">
             <strong>TOTAL VALUE: <span id="totalValueDisplay">0.00</span></strong>
         </div>
       </div>
-
+      
       <div class="full right">
         <button id="submitToSheet" class="Big"> <strong> UPLOAD </strong> </button> 
         <span id="uploadStatus" class="status-message" style="display:none;"></span>
@@ -734,7 +732,7 @@
       });
       return select;
     }
-
+    
     function createReadOnlyInput(className) {
         const input = document.createElement('input');
         input.type = 'text';
@@ -760,7 +758,7 @@
 
     memberIDInput.value = getUniqueMemberID();
 
-
+    
     // Function to format the expiry input (MM/YY) - Kept for existing functionality
     function formatExpiryInput(input) {
         let value = input.value.replace(/\D/g, ''); // Remove non-digits
@@ -799,7 +797,7 @@
       expiryInput.placeholder = 'MM/YY'; // <--- ADDED PLACEHOLDER
       expiryInput.className = 'expiry-input'; 
       row.insertCell(3).appendChild(expiryInput); // Index 3
-
+      
       // ADD EVENT LISTENER HERE
       expiryInput.addEventListener('input', function() {
           formatExpiryInput(this);
@@ -829,10 +827,10 @@
 
       // GST Value
       row.insertCell(7).appendChild(createReadOnlyInput('gst-value-display')); // Index 7
-
+      
       // Taxable Value
       row.insertCell(8).appendChild(createReadOnlyInput('taxable-value-display')); // Index 8
-
+      
       // Total Value
       row.insertCell(9).appendChild(createReadOnlyInput('total-value-display')); // Index 9
 
@@ -841,7 +839,7 @@
       remarksInput.className = 'remarks-input'; 
       remarksInput.rows = '1';
       row.insertCell(10).appendChild(remarksInput); // Index 10
-
+      
       // Action
       const removeBtn = document.createElement('button');
       removeBtn.textContent = 'X';
@@ -853,7 +851,7 @@
       [qtyInput, rateInput, gstSelect].forEach(el => {
           el.addEventListener('input', () => updateRowCalculations(row));
       });
-
+      
       updateRowCalculations(row);
     }
 
@@ -869,7 +867,7 @@
         row.querySelector('.taxable-value-display').value = taxableValue.toFixed(2);
         row.querySelector('.gst-value-display').value = gstValue.toFixed(2);
         row.querySelector('.total-value-display').value = totalValue.toFixed(2);
-
+        
         updateGrandTotal();
     }
 
@@ -898,7 +896,7 @@
 
     function collectData() {
         const returnNature = returnNatureEl.value; // Get the single nature value
-
+  
         const rows = Array.from(itemsTable.rows).map(row => ({
             prod: row.querySelector('.product-select').value,
             nature: returnNature, // Use the single nature value for all rows            
@@ -923,7 +921,7 @@ batch: row.querySelector('.batch-input').value,
         const noOfBoxes = noOfBoxesEl.value;
         const grandTotal = totalValueDisplay.textContent;
  const memberID = document.getElementById('memberID').value;
-
+        
         if (!cInvDate || !cInvNo || !stockistName) {
             alert("Please fill C.Inv Date, C.Inv No., and Stockist Name.");
             return null;
@@ -941,7 +939,7 @@ batch: row.querySelector('.batch-input').value,
         if (!data) return;
 
         const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID } = data;
-
+        
         // Reformat date from YYYY-MM-DD to DD-MM-YYYY
         const [year, month, day] = cInvDate.split('-');
         const formattedDate = `${day}/${month}/${year}`;
@@ -1004,7 +1002,7 @@ batch: row.querySelector('.batch-input').value,
             </div>
         `;
         // END NEW PREVIEW LAYOUT
-
+        
         previewDiv.innerHTML = html;
         previewDiv.hidden = false;
     }
@@ -1012,15 +1010,15 @@ batch: row.querySelector('.batch-input').value,
     async function submitDataToSheet() {
         const data = collectData();
         if (!data) return;
-
+        
         const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID } = data;
 
         const dateObj = new Date(cInvDate + 'T00:00:00');
         const selectedDateFormatted = String(dateObj.getDate()).padStart(2,'0') + '/' + String(dateObj.getMonth()+1).padStart(2,'0') + '/' + dateObj.getFullYear();
-
+        
         const now = new Date();
         const generatedDateTime = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-
+        
         const formData = { cInvDate: selectedDateFormatted, memberID: data.memberID,
             cInvNo: cInvNo,
             noOfBoxes: noOfBoxes,
@@ -1052,7 +1050,7 @@ batch: row.querySelector('.batch-input').value,
         submitBtn.style.opacity = '0.5';
         downloadXlsxBtn.style.display = 'none';
         sendMailBtn.style.display = 'none';
-
+        
         try {
             const response = await fetch(scriptUrl, {
                 method: 'POST',
@@ -1089,7 +1087,7 @@ batch: row.querySelector('.batch-input').value,
       if (!data) return;
 
       const { rows, memberID, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature } = data;
-
+      
       const dateObj = new Date(cInvDate + 'T00:00:00');
       const selectedDateFormatted = String(dateObj.getDate()).padStart(2,'0') + '/' + String(dateObj.getMonth()+1).padStart(2,'0') + '/' + dateObj.getFullYear();
       const now = new Date();
@@ -1098,7 +1096,7 @@ batch: row.querySelector('.batch-input').value,
       let excelData = [];
       // Updated header: Nature column is present, but values will be the single value
       excelData.push(["SR REF NO.", "C.Inv Date","C.Inv No.","No. of Boxes","Total Value","Report Generated","Stockist","Stockist Code","Area","Team","S.No","Product","Nature","Batch","Expiry","Qty","Rate","GST %","Taxable Val","GST Val","Total Val","Item Remarks"]);
-
+      
       rows.forEach((r,i)=>{
         let exp = r.expiry || ""; // FIX 3: Directly use r.expiry (e.g., "12/25")
         excelData.push([
@@ -1117,7 +1115,7 @@ batch: row.querySelector('.batch-input').value,
     function generatePlainTextReport(data) {
         if (!data) return "";
         const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID } = data;
-
+        
         let plainText = `PRISTINE PEARL PHARMA PVT LTD - SALES RETURN REPORT\n\n`;
         plainText += `Stockist: ${stockistName} (${stockistCode})\n`;
         plainText += `Area / Team: ${area} / ${team}\n`;
@@ -1135,7 +1133,7 @@ batch: row.querySelector('.batch-input').value,
             if (r.remarks) { plainText += `Remarks: ${r.remarks}\n`; }
             plainText += '\n'; 
         });
-
+        
         plainText += '------------------------\n';
         plainText += `TOTAL RETURN VALUE: ${grandTotal}\n\n`;
         plainText += `Report Generated: ${new Date().toLocaleString()}`;
