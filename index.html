@@ -388,7 +388,15 @@
       </div>
       <div>
         <label for="stockist">STOCKIST NAME</label>
-        <select id="stockist">
+
+<input 
+  type="text"
+  id="stockistSearch"
+  placeholder="Type to search stockist..."
+  style="margin-bottom:6px"
+/>
+
+<select id="stockist">
 			<option value="">-- Select Customer --</option>
 			<option value="AMA002" data-area="BANGALORE" data-team="HO">AMAZON (IGST)</option>
 <option value="AMA001" data-area="COIMBATORE" data-team="HO">AMAZON (LOCAL).</option>
@@ -1682,5 +1690,38 @@ document.getElementById("viewReport").addEventListener("click", function () {
 });
   </script>
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+<script>
+const searchInput = document.getElementById("stockistSearch");
+const stockistSelect = document.getElementById("stockist");
+
+// Save original options
+const originalOptions = Array.from(stockistSelect.options);
+
+searchInput.addEventListener("input", function () {
+  const keyword = this.value.toLowerCase();
+  stockistSelect.innerHTML = "";
+
+  originalOptions.forEach(opt => {
+    if (opt.text.toLowerCase().includes(keyword) || opt.value === "") {
+      stockistSelect.appendChild(opt.cloneNode(true));
+    }
+  });
+
+  // Expand dropdown while typing
+  stockistSelect.size = Math.min(8, stockistSelect.options.length);
+});
+
+// Collapse dropdown after selection
+stockistSelect.addEventListener("change", () => {
+  stockistSelect.size = 1;
+});
+
+// Auto collapse when leaving search
+searchInput.addEventListener("blur", () => {
+  setTimeout(() => stockistSelect.size = 1, 200);
+});
+</script>
+
 </body>
 </html>
