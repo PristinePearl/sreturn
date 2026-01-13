@@ -1721,6 +1721,73 @@ stockistSelect.addEventListener("change", () => {
 searchInput.addEventListener("blur", () => {
   setTimeout(() => stockistSelect.size = 1, 200);
 });
+
+/* ===============================
+   AUTO SAVE DRAFT (POWER CUT SAFE)
+   =============================== */
+
+function saveDraft() {
+  const draft = {
+    date: document.getElementById("date")?.value || "",
+    cInvNo: document.getElementById("cInvNo")?.value || "",
+    stockist: document.getElementById("stockist")?.value || "",
+    items: []
+  };
+
+  document.querySelectorAll("#itemsTable tbody tr").forEach(row => {
+    draft.items.push({
+      item: row.querySelector(".itemName")?.value || "",
+      batch: row.querySelector(".batch")?.value || "",
+      qty: row.querySelector(".qty")?.value || "",
+      rate: row.querySelector(".rate")?.value || "",
+      reason: row.querySelector(".reason")?.value || ""
+    });
+  });
+
+  localStorage.setItem("SR_DRAFT", JSON.stringify(draft));
+}
+
+// Auto-save every 3 seconds
+setInterval(saveDraft, 3000);
+
+
+/* ===============================
+   RESTORE DRAFT AFTER RESTART
+   =============================== */
+window.addEventListener("load", () => {
+  const draft = localStorage.getItem("SR_DRAFT");
+  if (!draft) return;
+
+  if (confirm(" ⚠ Unsaved Sales Return found. Restore?")) {
+    const data = JSON.parse(draft);
+
+    document.getElementById("date").value = data.date || "";
+    document.getElementById("cInvNo").value = data.cInvNo || "";
+
+    // ✅ FIX STARTS HERE
+    const stockistEl = document.getElementById("stockist");
+    stockistEl.value = data.stockist;
+    stockistEl.dispatchEvent(new Event("change"));
+    // ✅ FIX ENDS HERE
+
+    // Clear rows once
+    itemsTable.innerHTML = "";
+
+    // Restore products
+    data.items.forEach(item => {
+      newRow(item);
+    });
+  }
+});
+
+
+/* ===============================
+   CLEAR DRAFT AFTER SUCCESS SAVE
+   =============================== */
+function clearDraft() {
+  localStorage.removeItem("SR_DRAFT");
+}
+
 </script>
 
 </body>
