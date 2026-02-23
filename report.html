@@ -969,7 +969,7 @@ const url = URL.createObjectURL(blob);
 
 const a=document.createElement("a");
 a.href=url;
-a.download = filename + ".xlsx";
+a.download = filename + ".xls";
 a.click();
 
 URL.revokeObjectURL(url);
@@ -3011,7 +3011,7 @@ border-radius:12px;
 box-shadow:0 20px 60px rgba(0,0,0,.3);
 position:relative;
 padding:20px;
-animation:popIn .2s ease;
+animation:popIn .2s ease;	
 ">
 
 <button onclick="closeAnalysisModal()" style="
