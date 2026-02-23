@@ -397,7 +397,16 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        .product-table tr:nth-child(even) {
+        .product-table tr:nth-child(even){
+background-color:#f9fafb;
+}
+
+.consolidated-row:hover{
+background:#eef2ff;
+transform:scale(1.01);
+transition:.15s;
+cursor:pointer;
+}
             background-color: #f9fafb;
         }
         .product-table .total-row td {
@@ -479,6 +488,111 @@
                 max-width: 100%;
             }
         }
+tr.expired td{
+    background:#fee2e2 !important;
+    color:#991b1b;
+    font-weight:600;
+}
+
+tr.short-expiry td{
+    background:#ffedd5 !important;
+    color:#9a3412;
+    font-weight:600;
+}
+
+/* ===== MODAL POPUP UI ===== */
+
+.modal-overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.45);
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:9999;
+animation:fadeIn .2s ease;
+}
+
+.modal-box{
+width:92%;
+max-width:1100px;
+max-height:88vh;
+background:white;
+border-radius:16px;
+overflow:hidden;
+box-shadow:0 25px 80px rgba(0,0,0,.35);
+display:flex;
+flex-direction:column;
+animation:scaleIn .2s ease;
+}
+
+.modal-header{
+background:linear-gradient(135deg,#4f46e5,#3730a3);
+color:white;
+padding:14px 20px;
+font-weight:600;
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:16px;
+}
+
+.modal-close{
+cursor:pointer;
+font-size:20px;
+font-weight:700;
+opacity:.85;
+}
+.modal-close:hover{opacity:1}
+
+.modal-body{
+padding:18px;
+overflow:auto;
+}
+
+.modal-stats{
+display:flex;
+gap:25px;
+margin-bottom:15px;
+flex-wrap:wrap;
+}
+
+.stat-card{
+background:#f1f5f9;
+padding:10px 16px;
+border-radius:10px;
+font-weight:600;
+font-size:14px;
+color:#1e293b;
+box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
+
+.modal-table thead th{
+position:sticky;
+top:0;
+background:#eef2ff;
+z-index:2;
+}
+
+.modal-table tr:hover{
+background:#eef2ff;
+transform:scale(1.01);
+transition:.15s;
+cursor:pointer;
+}
+
+@keyframes scaleIn{
+from{transform:scale(.95);opacity:0}
+to{transform:scale(1);opacity:1}
+}
+
+@keyframes fadeIn{
+from{opacity:0}
+to{opacity:1}
+}
     </style>
 </head>
 <body>
@@ -548,7 +662,8 @@
                 <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">Product Analysis Report</h3>
                 <div class="form-group">
                     <label for="productSelect">Product Name:</label>
-                    <select id="productSelect" required>
+                    <select id="productSelect">
+<option value="ALL">All Products</option>
                         <option value="">Select Product</option>
                     </select>
                 </div>
@@ -566,8 +681,8 @@
             <form class="search-form" id="expiryForm">
                 <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">Expiry/Quality Report</h3>
                 <div class="form-group">
-                    <label for="expiryBeforeDate">Expiry Date (Before):</label>
-                    <input type="date" id="expiryBeforeDate" required>
+                    <label for="expiryBeforeDate">EXPIRY - MM/YYYY</label>
+                    <input type="month" id="expiryBeforeDate" required>
                 </div>
                 <div class="form-group">
                     <label for="remarksKeyword">Remarks Keyword (e.g., DAMAGE):</label>
@@ -752,6 +867,33 @@
             
             throw new Error('Failed to fetch data from Google Sheets. Please check the Sheet ID and ensure the sheet is publicly accessible.');
         }
+// Populate Product dropdown
+(async function initProductDropdown(){
+
+const sheetId=document.getElementById("sheetId").value.trim();
+if(!sheetId) return setTimeout(initProductDropdown,300);
+
+try{
+const data=await fetchSheetData(sheetId);
+
+const set=new Set();
+data.forEach(r=>{ if(r['PRODUCT']) set.add(r['PRODUCT']); });
+
+const select=document.getElementById("productSelect");
+
+select.innerHTML=
+'<option value="ALL">All Products</option>'+
+'<option value="">Select Product</option>';
+
+[...set].sort().forEach(p=>{
+const opt=document.createElement("option");
+opt.value=p;
+opt.textContent=p;
+select.appendChild(opt);
+});
+
+}catch(e){}
+})();
 
         function parseCSV(csvText) {
             const lines = csvText.split('\n').filter(line => line.trim());
@@ -789,56 +931,49 @@
         // --- Export Functions ---
 
         // Function to export the results array to CSV/Excel
-        function exportToCSV(data, filename) {
-            if (!data || data.length === 0) {
-                alert("No data to export.");
-                return;
-            }
+function exportToCSV(data, filename="Report"){
 
-            const headers = Object.keys(data[0]);
-            const csvRows = [];
-            
-            // Add header row
-            csvRows.push(headers.map(h => `"${h}"`).join(','));
+try{
 
-            // Add data rows
-            for (const row of data) {
-                const values = headers.map(header => {
-                    let value = row[header] === undefined || row[header] === null ? '' : String(row[header]);
-                    
-                    // Format EXPIRY to MM/YY
-                    if (header === 'EXPIRY') {
-                        const match = value.match(/(\d{1,2})\/(\d{4})/);
-                        if (match) {
-                             const month = match[1].padStart(2, '0'); 
-                             const year = match[2].slice(-2);
-                             value = `${month}/${year}`;
-                        }
-                    }
+if(!Array.isArray(data) || !data.length){
+alert("No data to export");
+return;
+}
 
-                    // Escape double quotes and wrap in quotes
-                    return `"${value.replace(/"/g, '""')}"`;
-                });
-                csvRows.push(values.join(','));
-            }
+const headers = Object.keys(data[0] || {});
 
-            const csvString = csvRows.join('\n');
-            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
+const csv = [
+headers.join(","),
 
-            if (link.download !== undefined) { 
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `${filename}.csv`); 
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            } else {
-                window.open('data:text/csv;charset=utf-8,' + encodeURIComponent(csvString));
-            }
-        }
+...data.map(row =>
+headers.map(h=>{
+let v = row?.[h] ?? "";
+
+if(typeof v === "object") v = JSON.stringify(v);
+v = String(v).replace(/"/g,'""');
+
+return `"${v}"`;
+}).join(",")
+)
+].join("\n");
+
+const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+const url = URL.createObjectURL(blob);
+
+const a=document.createElement("a");
+a.href=url;
+a.download = filename + ".csv";
+document.body.appendChild(a);
+a.click();
+a.remove();
+
+URL.revokeObjectURL(url);
+
+}catch(err){
+console.error("EXPORT ERROR:",err);
+alert("Export failed — check console");
+}
+}
 
         // Function to export a single expanded card's data (used by the Export This SR button)
         function exportExpandedCardData(srRef) {
@@ -851,7 +986,43 @@
                 alert("Error: Data for this SR reference not found for export.");
             }
         }
-        
+
+function getExpiryClass(expiryStr){
+    if(!expiryStr) return "";
+
+    const today = new Date();
+
+    let expiryDate;
+
+    // format: DD/MM/YYYY
+    if(expiryStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)){
+        const [d,m,y]=expiryStr.split('/').map(Number);
+        expiryDate=new Date(y,m,0);
+    }
+
+    // format: MM/YYYY or MM/YY
+    else if(expiryStr.match(/^\d{1,2}\/\d{2,4}$/)){
+        let [m,y]=expiryStr.split('/');
+        m=parseInt(m);
+        y=parseInt(y);
+        if(y<100) y+=2000;
+        expiryDate=new Date(y,m,0);
+    }
+
+    else return "";
+
+    // expired
+    if(expiryDate < today) return "expired";
+
+    // short expiry (within 6 months from next month)
+    const nextMonth=new Date(today.getFullYear(),today.getMonth()+1,1);
+    const sixMonthsLater=new Date(nextMonth.getFullYear(),nextMonth.getMonth()+6,0);
+
+    if(expiryDate <= sixMonthsLater) return "short-expiry";
+
+    return "";
+}        
+
         // --- UI Rendering Functions ---
 
         function generateResultCardHtml(results, isExpandedView = false) {
@@ -876,11 +1047,11 @@
                 const gstValue = (parseFloat(result['GST VALUE'].replace(/[^0-9.-]+/g,"")) || 0).toFixed(2);
                 
                 return `
-                    <tr>
+<tr class="${getExpiryClass(result['EXPIRY'])}">
                         <td>${index + 1}</td>
                         <td>${result['PRODUCT']}</td>
                         <td>${result['BATCH']}</td>
-                        <td>${result['EXPIRY']}</td>
+<td>${result['EXPIRY']}</td>
                         <td>${result['QTY']}</td>
 <td>${result['FQTY'] || '-'}</td>
                         <td style="text-align: right;">₹${unitRate}</td>
@@ -897,7 +1068,7 @@
                 <div class="result-card">
                     <div class="result-header" style="flex-wrap: wrap;">
                         <h2> PRISTINE PEARL PHARMA </h2>
-                        <div class="sr-ref">Sales Return: ${firstResult['SR Ref No.']}</div>
+<div class="sr-ref">Stockist: ${firstResult['STOCKIST NAME']}</div>
                         <div class="total-amount">Grand Total: ₹${totalGrandAmount}</div> 
                         ${isExpandedView ? `
 <div style="display:flex;gap:8px">
@@ -1029,6 +1200,252 @@ Download
             return html;
         }
 
+function generateAnalysisPopup(rows,title){
+
+let totalQty=0;
+let totalVal=0;
+
+// ---------- MODE : ALL PRODUCTS ----------
+if(window.analysisMode==="ALL"){
+
+const map={};
+
+rows.forEach(r=>{
+const key=r['STOCKIST NAME'];
+const qty=parseInt(r['QTY'])||0;
+const val=parseFloat(r['TOTAL'])||0;
+
+if(!map[key]) map[key]={qty:0,val:0,set:new Set()};
+
+map[key].qty+=qty;
+map[key].val+=val;
+map[key].set.add(r['SR Ref No.']);
+
+totalQty+=qty;
+totalVal+=val;
+});
+
+const body=Object.entries(map).map(([k,v])=>`
+<tr>
+<td>${k}</td>
+<td>${v.set.size}</td>
+<td style="text-align:center">${v.qty}</td>
+<td style="text-align:right">₹${v.val.toFixed(2)}</td>
+</tr>`).join("");
+
+return `
+<div style="padding:10px">
+
+<h2 style="color:#3730a3;margin-bottom:6px">
+Product: ${title}
+</h2>
+
+<div style="display:flex;gap:20px;margin-bottom:10px;font-weight:600">
+<span>Total Qty: ${totalQty}</span>
+<span>Total Value: ₹${totalVal.toFixed(2)}</span>
+</div>
+
+<table class="product-table">
+<thead>
+<tr>
+<th>Stockist Name</th>
+<th>No. Of Times</th>
+<th>Qty</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody>
+${body}
+</tbody>
+</table>
+
+</div>`;
+}
+
+
+// ---------- MODE : SINGLE PRODUCT ----------
+let totalQty2=0;
+let totalVal2=0;
+
+const body=rows.map((r,i)=>{
+
+const qty=parseInt(r['QTY'])||0;
+const val=parseFloat(r['TOTAL'])||0;
+
+totalQty2+=qty;
+totalVal2+=val;
+
+return `
+<tr class="${getExpiryClass(r['EXPIRY'])}">
+<td>${i+1}</td>
+<td>${r['PRODUCT']}</td>
+<td>${r['BATCH']}</td>
+<td>${r['EXPIRY']}</td>
+<td>${qty}</td>
+<td>₹${val.toFixed(2)}</td>
+</tr>`;
+}).join("");
+
+return `
+<div style="padding:10px">
+
+<h2 style="color:#3730a3;margin-bottom:6px">
+Stockist: ${title}
+</h2>
+
+<div style="display:flex;gap:20px;margin-bottom:10px;font-weight:600">
+<span>Total Qty: ${totalQty2}</span>
+<span>Total Value: ₹${totalVal2.toFixed(2)}</span>
+</div>
+
+<table class="product-table">
+<thead>
+<tr>
+<th>#</th>
+<th>Product</th>
+<th>Batch</th>
+<th>Exp</th>
+<th>Qty</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+${body}
+</tbody>
+</table>
+
+</div>`;
+}
+
+function openProductPopup(rows,title,mode){
+
+let totalQty=0;
+let totalVal=0;
+
+if(mode==="ALL"){
+
+const map={};
+
+rows.forEach(r=>{
+const key=r['STOCKIST NAME'];
+const qty=parseInt(r['QTY'])||0;
+const val=parseFloat(r['TOTAL'])||0;
+
+if(!map[key]) map[key]={qty:0,val:0,set:new Set()};
+map[key].qty+=qty;
+map[key].val+=val;
+map[key].set.add(r['SR Ref No.']);
+
+totalQty+=qty;
+totalVal+=val;
+});
+
+const body=Object.entries(map).map(([k,v])=>`
+<tr>
+<td>${k}</td>
+<td>${v.set.size}</td>
+<td>${v.qty}</td>
+<td>₹${v.val.toFixed(2)}</td>
+</tr>`).join("");
+
+showPopup(`
+<h2>Product: ${title}</h2>
+<div class="modal-stats">
+<div class="stat-card">Stockist: ${title}</div>
+<div class="stat-card">Total Qty: ${totalQty}</div>
+<div class="stat-card">Total Value: ₹${totalVal.toFixed(2)}</div>
+</div>
+
+<table class="product-table">
+<thead>
+<tr>
+<th>Stockist</th>
+<th>No. Times</th>
+<th>Qty</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody>${body}</tbody>
+</table>
+`);
+return;
+}
+
+
+// SINGLE PRODUCT VIEW
+let htmlRows=rows.map((r,i)=>`
+<tr>
+<td>${i+1}</td>
+<td>${r['PRODUCT']}</td>
+<td>${r['BATCH']}</td>
+<td>${r['EXPIRY']}</td>
+<td>${r['QTY']}</td>
+<td>₹${parseFloat(r['TOTAL']).toFixed(2)}</td>
+</tr>`).join("");
+
+showPopup(`
+<h2>Stockist: ${title}</h2>
+
+<table class="product-table">
+<thead>
+<tr>
+<th>#</th>
+<th>Product</th>
+<th>Batch</th>
+<th>Exp</th>
+<th>Qty</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>${htmlRows}</tbody>
+</table>
+`);
+}
+function openExpiryPopup(rows,title){
+
+let totalQty=0;
+let totalVal=0;
+
+const body=rows.map(r=>{
+const qty=parseInt(r['QTY'])||0;
+const val=parseFloat(r['TOTAL'])||0;
+
+totalQty+=qty;
+totalVal+=val;
+
+return `
+<tr>
+<td>${r['PRODUCT']}</td>
+<td>${r['BATCH']}</td>
+<td>${r['EXPIRY']}</td>
+<td>${qty}</td>
+<td>₹${val.toFixed(2)}</td>
+</tr>
+`;
+}).join("");
+
+showPopup(`
+<div class="modal-stats">
+<div class="stat-card">Product: ${title}</div>
+<div class="stat-card">Total Qty: ${totalQty}</div>
+<div class="stat-card">Total Value: ₹${totalVal.toFixed(2)}</div>
+</div>
+
+<table class="product-table">
+<thead>
+<tr>
+<th>Product</th>
+<th>Batch</th>
+<th>Expiry</th>
+<th>Qty</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody>${body}</tbody>
+</table>
+`);
+}
+
 function generateInvoiceHTML(rows){
 
 const r = rows[0];
@@ -1053,7 +1470,9 @@ return `
 <td>${i+1}</td>
 <td>${row['PRODUCT']}</td>
 <td>${row['BATCH']}</td>
-<td>${row['EXPIRY']}</td>
+<td class="${getExpiryClass(row['EXPIRY'])}">
+${row['EXPIRY']}
+</td>
 <td>${row['QTY']}</td>
 <td>${row['FQTY']||''}</td>
 <td>${rate.toFixed(2)}</td>
@@ -1248,6 +1667,8 @@ color:#555;
 border-top:1px dashed #aaa;
 padding-top:6px;
 }
+.expired { color:#dc2626; font-weight:700; }
+.short-expiry { color:#f97316; font-weight:700; }
 
 /* PRINT SETTINGS */
 @media print{
@@ -1261,6 +1682,11 @@ width:100%;
 }
 }
 
+@keyframes popIn{
+from{transform:scale(.9);opacity:0}
+to{transform:scale(1);opacity:1}
+}
+
 </style>
 `;
 }
@@ -1270,6 +1696,7 @@ width:100%;
             const resultsSection = document.getElementById('resultsSection');
             // Pass true for isExpandedView since this is the main single-SR view
             resultsSection.innerHTML = generateResultCardHtml(results, true);
+applyExpiryHighlighting();
         }
 
         // Function to display simple tabular results for the other reports
@@ -1316,7 +1743,11 @@ width:100%;
                         tableHtml += `<td style="text-align: center;">${value}</td>`;
                     } 
                     else {
-                        tableHtml += `<td>${value}</td>`;
+                        if(header === 'EXPIRY'){
+   tableHtml += `<td class="${getExpiryClass(value)}">${value}</td>`;
+}else{
+   tableHtml += `<td>${value}</td>`;
+}
                     }
                 });
                 tableHtml += '</tr>';
@@ -1329,6 +1760,7 @@ width:100%;
             `;
 
             resultsSection.innerHTML = tableHtml;
+applyExpiryHighlighting();
         }
 
         // Function to destroy and reset chart canvas
@@ -1574,6 +2006,7 @@ document.getElementById('printPdfBtn').style.display='block';
                 }
 
                 resultsSection.innerHTML = html;
+applyExpiryHighlighting();
                 window.groupedResults = grouped;
 
             } catch (err) {
@@ -1609,6 +2042,7 @@ win.print();
         document.getElementById('productForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const sheetId = document.getElementById('sheetId').value.trim();
+document.getElementById("productSelect").value ||= "ALL";
             const product = document.getElementById('productSelect').value.trim();
             const batch = document.getElementById('batchInput').value.trim();
             const resultsSection = document.getElementById('resultsSection');
@@ -1621,14 +2055,75 @@ win.print();
             try {
                 const data = await fetchSheetData(sheetId);
                 
-                const filtered = data.filter(row => 
-                    row['PRODUCT'] === product && 
-                    (!batch || row['BATCH'].toUpperCase() === batch.toUpperCase())
-                );
+                const filtered = data.filter(row => {
+
+if(product !== "ALL" && row['PRODUCT'] !== product)
+return false;
+
+if(batch && row['BATCH'].toUpperCase() !== batch.toUpperCase())
+return false;
+
+return true;
+});
 
                 // Report Headers
                 const headers = ['SR Ref No.', 'C. INV DATE', 'STOCKIST NAME', 'BATCH', 'EXPIRY', 'QTY', 'TOTAL'];
-                displaySummaryTable(filtered, headers, `Product Return Report for ${product}`, 'exportProductBtn');
+                // CONSOLIDATE BY STOCKIST
+const map={};
+
+filtered.forEach(r=>{
+const key = product==="ALL" ? r['PRODUCT'] : r['STOCKIST NAME'];
+const qty=parseInt(r['QTY'])||0;
+const val=parseFloat(r['TOTAL'])||0;
+
+if(!map[key])
+map[key]={label:key,qty:0,value:0,rows:[],sr:new Set()};
+
+map[key].qty+=qty;
+map[key].value+=val;
+map[key].rows.push(r);
+map[key].sr.add(r['SR Ref No.']);
+
+map[key].count = map[key].sr.size;
+});
+
+const consolidated=Object.values(map);
+
+lastFilterResults=filtered;
+document.getElementById('exportProductBtn').style.display='block';
+
+let html=`
+<h2 style="margin-bottom:12px;color:#3730a3">
+Product Analysis — ${product==="ALL" ? "All Products" : product}
+</h2>
+
+<table class="product-table">
+<thead>
+<tr>
+<th>Stockist</th>
+<th>No. of Times</th>
+<th>QTY</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+`;
+
+consolidated.forEach(c=>{
+html+=`
+<tr class="consolidated-row"
+onclick='openProductPopup(${JSON.stringify(c.rows)},"${c.label}","${product}")'>
+<td>${c.label}</td>
+<td style="text-align:center">${c.count}</td>
+<td style="text-align:center">${c.qty}</td>
+<td style="text-align:right">₹${c.value.toFixed(2)}</td>
+</tr>
+`;
+});
+
+html+=`</tbody></table>`;
+
+resultsSection.innerHTML=html;
 
             } catch (err) {
                 resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
@@ -1658,29 +2153,22 @@ win.print();
             try {
                 const data = await fetchSheetData(sheetId);
                 
-                const filterDate = new Date(expiryDate);
-                filterDate.setHours(23, 59, 59, 999);
+                const [year, month] = expiryDate.split('-').map(Number);
                 
                 const filtered = data.filter(row => {
                     // 1. Expiry Date Filter (Product expiry must be BEFORE the filter date)
-                    const expiryValue = row['EXPIRY']; 
-                    if (!expiryValue) return false;
-                    
-                    const parts = expiryValue.split('/');
-                    if (parts.length < 2) return false;
+                    const expiryValue = row['EXPIRY'];
+if(!expiryValue) return false;
 
-                    const year = parseInt(parts[1], 10);
-                    const month = parseInt(parts[0], 10);
+const parts = expiryValue.split('/');
+if(parts.length < 2) return false;
 
-                    // Assume 2-digit years are 20XX
-                    const fullYear = (year < 100) ? 2000 + year : year;
+let m = parseInt(parts[0],10);
+let y = parseInt(parts[1],10);
+if(y < 100) y += 2000;
 
-                    if (isNaN(fullYear) || isNaN(month) || month < 1 || month > 12) return false;
-
-                    // Create a date object for the last day of the expiry month
-                    const productExpiry = new Date(fullYear, month, 0); 
-                    
-                    if (productExpiry.getTime() >= filterDate.getTime()) return false;
+// match selected month & year
+if(m !== month || y !== year) return false;
                     
                     // 2. Remarks Filter
                     if (remarks && row['REMARKS'].toUpperCase().indexOf(remarks) === -1) {
@@ -1697,7 +2185,65 @@ win.print();
 
                 // Report Headers
                 const headers = ['SR Ref No.', 'STOCKIST NAME', 'PRODUCT', 'BATCH', 'EXPIRY', 'QTY', 'REMARKS', 'TOTAL'];
-                displaySummaryTable(filtered, headers, `Expiry/Quality Report`, 'exportExpiryBtn');
+                // CONSOLIDATE BY STOCKIST
+const map={};
+
+filtered.forEach(r=>{
+const key=r['STOCKIST NAME'];
+const qty=parseInt(r['QTY'])||0;
+const val=parseFloat(r['TOTAL'])||0;
+
+if(!map[key]) map[key]={stockist:key,qty:0,value:0,rows:[],count:0};
+
+map[key].qty+=qty;
+map[key].value+=val;
+map[key].rows.push(r);
+
+map[key].count = [...new Set(map[key].rows.map(x=>x['SR Ref No.']))].length;
+});
+
+const consolidated=Object.values(map);
+
+lastFilterResults=consolidated.map(c=>({
+Stockist:c.stockist,
+Times:c.count,
+Qty:c.qty,
+Value:c.value.toFixed(2)
+}));
+document.getElementById('exportProductBtn').style.display='block';
+
+let html=`
+<h2 style="margin-bottom:12px;color:#3730a3">
+Expiry / Quality Report
+</h2>
+
+<table class="product-table">
+<thead>
+<tr>
+<th>Stockist</th>
+<th>No. of Times</th>
+<th>QTY</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+`;
+
+consolidated.forEach(c=>{
+html+=`
+<tr style="cursor:pointer"
+onclick='openExpiryPopup(${JSON.stringify(c.rows)},"${c.stockist}")'>
+<td>${c.stockist}</td>
+<td style="text-align:center">${c.count}</td>
+<td style="text-align:center">${c.qty}</td>
+<td style="text-align:right">₹${c.value.toFixed(2)}</td>
+</tr>
+`;
+});
+
+html+=`</tbody></table>`;
+
+resultsSection.innerHTML=html;
 
             } catch (err) {
                 resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
@@ -2174,7 +2720,7 @@ document.getElementById('printStockist')
                 ];
                 
                 productSelects.forEach(select => {
-                    select.innerHTML = select.id === 'productSelect' ? '<option value="">Select Product</option>' : '<option value="">All Products</option>';
+                    select.innerHTML = select.id === 'productSelect' ? '<option value="ALL">All Products</option><option value="">Select Product</option>' : '<option value="">All Products</option>';
                     sortedProducts.forEach(name => {
                         const opt = document.createElement('option');
                         opt.value = name;
@@ -2239,6 +2785,247 @@ win.document.write(generateInvoiceHTML(rows));
 win.document.close();
 win.print();
 }
+function applyExpiryHighlighting(){
+
+document.querySelectorAll("table tbody tr").forEach(row=>{
+
+const cells=[...row.cells];
+const expiryCell=cells.find(td=>/\d{1,2}\/\d{2,4}/.test(td.innerText));
+
+if(!expiryCell) return;
+
+const expiry=expiryCell.innerText.trim();
+const cls=getExpiryClass(expiry);
+
+row.classList.remove("expired","short-expiry");
+
+if(cls) row.classList.add(cls);
+
+});
+
+}
+function openDrill(rows,title,mode){
+window.analysisMode = mode;
+
+let totalQty=0;
+let totalVal=0;
+const srSet=new Set();
+
+const tableRows=rows.map(r=>{
+
+const qty=parseInt(r['QTY'])||0;
+const val=parseFloat(r['TOTAL'])||0;
+
+totalQty+=qty;
+totalVal+=val;
+srSet.add(r['SR Ref No.']);
+
+return `
+<tr class="${getExpiryClass(r['EXPIRY'])}">
+<td>${r['Stockist']}</td>
+<td style="text-align:center">${qty}</td>
+<td style="text-align:right">₹${val.toFixed(2)}</td>
+</tr>`;
+}).join("");
+
+const html=`
+<h2 style="color:#3730a3;margin-bottom:5px">
+Product : ${title}
+</h2>
+
+<div style="display:flex;gap:25px;margin-bottom:15px;font-weight:600">
+<span>Total Qty: ${totalQty}</span>
+<span>Total Value: ₹${totalVal.toFixed(2)}</span>
+<span>No of Times: ${srSet.size}</span>
+</div>
+
+<table class="product-table">
+<thead>
+<tr>
+${mode==="ALL"
+? `<th>Product</th><th>No. Times</th><th>Qty</th><th>Total</th>`
+: `<th>#</th><th>Stockist</th><th>Qty</th><th>Value</th>`
+
+}
+</tr>
+</thead>
+<tbody>${tableRows}</tbody>
+</table>
+
+<div style="text-align:right;margin-top:15px">
+<button class="btn btn-secondary"
+onclick='exportToCSV(${JSON.stringify(rows)},"Drill Report")'>
+Export Excel
+</button>
+</div>
+`;
+
+document.getElementById("analysisModalContent").innerHTML=html;
+document.getElementById("analysisModal").style.display="flex";
+}
+
+function closeAnalysisModal(){
+document.getElementById("analysisModal").style.display="none";
+}
+function showPopup(html,title="Report"){
+
+let modal=document.getElementById("globalModal");
+
+if(!modal){
+
+modal=document.createElement("div");
+modal.id="globalModal";
+modal.className="modal-overlay";
+
+modal.innerHTML=`
+<div class="modal-box">
+
+<div class="modal-header">
+
+<span id="modalTitle">${title}</span>
+
+<div style="display:flex;gap:10px;align-items:center">
+
+<button onclick="exportPopupTable(document.getElementById('modalTitle').innerText)"
+style="
+background:white;
+color:#3730a3;
+border:none;
+padding:5px 12px;
+border-radius:6px;
+font-weight:600;
+cursor:pointer;
+">
+Export
+</button>
+
+<span class="modal-close" onclick="globalModal.remove()">×</span>
+
+</div>
+</div>
+
+<div class="modal-body" id="modalContent"></div>
+
+</div>
+`;
+
+modal.onclick=e=>{
+if(e.target.id==="globalModal")
+modal.remove();
+};
+
+document.body.appendChild(modal);
+}
+
+document.getElementById("modalContent").innerHTML=html;
+document.getElementById("modalTitle").innerText=title;
+}
+
+function exportPopupTable(filename="Popup_Report"){
+
+const table=document.querySelector("#globalModal table");
+
+if(!table){
+alert("No table found to export");
+return;
+}
+
+const rows=[...table.querySelectorAll("tr")].map(tr=>{
+return [...tr.children].map(td=>td.innerText.trim());
+});
+
+const headers=rows.shift();
+
+const data=rows.map(r=>{
+let obj={};
+headers.forEach((h,i)=>obj[h]=r[i]);
+return obj;
+});
+
+exportToCSV(data,filename);
+}
+
     </script>
+
+<div id="drillPopup" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.45);
+z-index:9999;
+align-items:center;
+justify-content:center;
+">
+
+<div style="
+background:white;
+width:90%;
+max-width:1000px;
+max-height:85vh;
+overflow:auto;
+border-radius:10px;
+padding:20px;
+box-shadow:0 10px 40px rgba(0,0,0,.25);
+position:relative;
+">
+
+<button onclick="closeDrill()" style="
+position:absolute;
+top:10px;
+right:15px;
+border:none;
+background:none;
+font-size:22px;
+cursor:pointer;
+">×</button>
+
+<div id="drillContent"></div>
+
+</div>
+</div>
+
+<div id="analysisModal" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.45);
+z-index:9999;
+align-items:center;
+justify-content:center;
+">
+
+<div style="
+background:white;
+width:92%;
+max-width:1200px;
+max-height:90vh;
+overflow:auto;
+border-radius:12px;
+box-shadow:0 20px 60px rgba(0,0,0,.3);
+position:relative;
+padding:20px;
+animation:popIn .2s ease;
+">
+
+<button onclick="closeAnalysisModal()" style="
+position:absolute;
+right:15px;
+top:10px;
+border:none;
+background:none;
+font-size:26px;
+cursor:pointer;
+color:#555;">×</button>
+
+<div id="analysisModalContent"></div>
+
+</div>
+</div>
 </body>
 </html>
