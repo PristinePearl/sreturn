@@ -933,42 +933,44 @@ select.appendChild(opt);
         // Function to export the results array to CSV/Excel
 function exportToCSV(data, filename="Report"){
 
-try{
-
 if(!Array.isArray(data) || !data.length){
 alert("No data to export");
 return;
 }
 
-const headers = Object.keys(data[0] || {});
+const headers = Object.keys(data[0]);
 
-const csv = [
-headers.join(","),
+let html = "<table border='1'><tr>";
 
-...data.map(row =>
-headers.map(h=>{
-let v = row?.[h] ?? "";
+headers.forEach(h=>{
+html += "<th>"+h+"</th>";
+});
 
-if(typeof v === "object") v = JSON.stringify(v);
-v = String(v).replace(/"/g,'""');
+html += "</tr>";
 
-return `"${v}"`;
-}).join(",")
-)
-].join("\n");
+data.forEach(row=>{
+html += "<tr>";
+headers.forEach(h=>{
+html += "<td>"+(row[h] ?? "")+"</td>";
+});
+html += "</tr>";
+});
 
-const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+html += "</table>";
+
+const blob = new Blob(
+["\ufeff",html],
+{type:"application/vnd.ms-excel"}
+);
+
 const url = URL.createObjectURL(blob);
 
 const a=document.createElement("a");
 a.href=url;
-a.download = filename + ".csv";
-document.body.appendChild(a);
+a.download = filename + ".xlsx";
 a.click();
-a.remove();
 
 URL.revokeObjectURL(url);
-
 }catch(err){
 console.error("EXPORT ERROR:",err);
 alert("Export failed — check console");
@@ -1958,6 +1960,8 @@ document.getElementById('printPdfBtn').style.display='block';
 
                     return true;
                 });
+lastFilterResults = filtered;
+document.getElementById('exportExpiryBtn').style.display='block';
 
                 if (filtered.length === 0) {
                     resultsSection.innerHTML = '<div class="no-results">No records found for given filter.</div>';
@@ -2924,27 +2928,22 @@ document.getElementById("modalTitle").innerText=title;
 function exportPopupTable(filename="Popup_Report"){
 
 const table=document.querySelector("#globalModal table");
+if(!table){ alert("No table"); return; }
 
-if(!table){
-alert("No table found to export");
-return;
-}
-
-const rows=[...table.querySelectorAll("tr")].map(tr=>{
-return [...tr.children].map(td=>td.innerText.trim());
-});
+const rows=[...table.rows].map(r=>
+[...r.cells].map(c=>c.innerText)
+);
 
 const headers=rows.shift();
 
 const data=rows.map(r=>{
-let obj={};
-headers.forEach((h,i)=>obj[h]=r[i]);
-return obj;
+let o={};
+headers.forEach((h,i)=>o[h]=r[i]);
+return o;
 });
 
 exportToCSV(data,filename);
 }
-
     </script>
 
 <div id="drillPopup" style="
