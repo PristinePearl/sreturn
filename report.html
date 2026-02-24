@@ -401,6 +401,23 @@
 background-color:#f9fafb;
 }
 
+/* Hover for ALL product tables (Expiry/Quality included) */
+/* Hover only for normal rows */
+.product-table tbody tr:not(.expired):not(.short-expiry):hover td{
+    background:#eef2ff;
+    transition:0.15s ease;
+    cursor:pointer;
+}
+/* Expired stays red even on hover */
+.product-table tbody tr.expired:hover td{
+    background:#fee2e2 !important;
+}
+
+/* Short expiry stays orange even on hover */
+.product-table tbody tr.short-expiry:hover td{
+    background:#ffedd5 !important;
+}
+
 .consolidated-row:hover{
 background:#eef2ff;
 transform:scale(1.01);
@@ -593,6 +610,47 @@ to{transform:scale(1);opacity:1}
 from{opacity:0}
 to{opacity:1}
 }
+
+/* ===== SUMMARY CARDS ===== */
+
+.summary-container{
+display:flex;
+flex-wrap:wrap;
+gap:18px;
+margin-bottom:18px;
+}
+
+.summary-card{
+flex:1;
+min-width:220px;
+background:white;
+border-radius:14px;
+padding:16px 18px;
+box-shadow:0 10px 25px rgba(0,0,0,.08);
+border-left:6px solid #4f46e5;
+transition:.2s ease;
+}
+
+.summary-card:hover{
+transform:translateY(-3px);
+box-shadow:0 14px 35px rgba(0,0,0,.12);
+}
+
+.summary-title{
+font-size:12px;
+color:#64748b;
+text-transform:uppercase;
+font-weight:600;
+letter-spacing:.5px;
+margin-bottom:6px;
+}
+
+.summary-value{
+font-size:20px;
+font-weight:800;
+color:#1e293b;
+}
+
     </style>
 </head>
 <body>
@@ -1418,7 +1476,7 @@ totalQty+=qty;
 totalVal+=val;
 
 return `
-<tr>
+<tr class="${getExpiryClass(r['EXPIRY'])}">
 <td>${r['PRODUCT']}</td>
 <td>${r['BATCH']}</td>
 <td>${r['EXPIRY']}</td>
@@ -1642,6 +1700,13 @@ color:white;
 border:1px solid #000;
 padding:7px;
 }
+/* Hover effect for all report tables */
+.product-table tbody tr:hover td {
+    background: #eef2ff !important;
+    transform: scale(1.01);
+    transition: 0.15s ease;
+    cursor: pointer;
+}
 
 .product-table td{
 border:1px solid #000;
@@ -1703,6 +1768,52 @@ to{transform:scale(1);opacity:1}
 applyExpiryHighlighting();
         }
 
+function generateSummaryCards(data){
+
+let totalQty = 0;
+let totalValue = 0;
+const srSet = new Set();
+const productSet = new Set();
+
+data.forEach(r=>{
+totalQty += parseInt(r['QTY']) || 0;
+totalValue += parseFloat(r['TOTAL']) || 0;
+if(r['SR Ref No.']) srSet.add(r['SR Ref No.']);
+if(r['PRODUCT']) productSet.add(r['PRODUCT']);
+});
+
+return `
+<div class="summary-container">
+
+<div class="summary-card">
+<div class="summary-title">Total Records</div>
+<div class="summary-value">${data.length}</div>
+</div>
+
+<div class="summary-card">
+<div class="summary-title">Unique SR</div>
+<div class="summary-value">${srSet.size}</div>
+</div>
+
+<div class="summary-card">
+<div class="summary-title">Total Quantity</div>
+<div class="summary-value">${totalQty}</div>
+</div>
+
+<div class="summary-card">
+<div class="summary-title">Total Value</div>
+<div class="summary-value">₹${totalValue.toFixed(2)}</div>
+</div>
+
+<div class="summary-card">
+<div class="summary-title">Unique Products</div>
+<div class="summary-value">${productSet.size}</div>
+</div>
+
+</div>
+`;
+}
+
         // Function to display simple tabular results for the other reports
         function displaySummaryTable(data, headers, title, exportBtnId) {
             const resultsSection = document.getElementById('resultsSection');
@@ -1763,7 +1874,8 @@ applyExpiryHighlighting();
                 </div>
             `;
 
-            resultsSection.innerHTML = tableHtml;
+resultsSection.innerHTML =
+generateSummaryCards(data) + tableHtml;
 applyExpiryHighlighting();
         }
 
@@ -2011,7 +2123,8 @@ document.getElementById('exportExpiryBtn').style.display='block';
                     `;
                 }
 
-                resultsSection.innerHTML = html;
+                resultsSection.innerHTML =
+generateSummaryCards(filtered) + html;
 applyExpiryHighlighting();
                 window.groupedResults = grouped;
 
@@ -2129,7 +2242,8 @@ onclick='openProductPopup(${JSON.stringify(c.rows)},"${c.label}","${product}")'>
 
 html+=`</tbody></table>`;
 
-resultsSection.innerHTML=html;
+resultsSection.innerHTML =
+generateSummaryCards(filtered) + html;
 
             } catch (err) {
                 resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
@@ -2249,7 +2363,8 @@ onclick='openExpiryPopup(${JSON.stringify(c.rows)},"${c.stockist}")'>
 
 html+=`</tbody></table>`;
 
-resultsSection.innerHTML=html;
+resultsSection.innerHTML =
+    generateSummaryCards(filtered) + html;
 
             } catch (err) {
                 resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
@@ -2321,7 +2436,10 @@ resultsSection.innerHTML=html;
                 lastFilterResults = filtered;
                 document.getElementById('exportChartBtn').style.display = 'block';
 
-                generateChartReport(filtered, product, stockist);
+                resultsSection.innerHTML +=
+generateSummaryCards(filtered);
+
+generateChartReport(filtered, product, stockist);
 
             } catch (err) {
                 resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
@@ -2499,16 +2617,24 @@ resultsSection.innerHTML=html;
             const totalProductsReturned = data.reduce((sum, row) => sum + (parseInt(row['QTY'], 10) || 0), 0);
             const totalUniqueSR = new Set(data.map(row => row['SR Ref No.'])).size;
 
-            // --- 2. Top Returned Products (by Value) ---
-            const productValueMap = data.reduce((acc, row) => {
-                const key = row['PRODUCT'];
-                const total = parseFloat(row['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0;
-                acc[key] = (acc[key] || 0) + total;
-                return acc;
-            }, {});
+            // --- 2. Top Returned Products (by Value + Qty) ---
+const productValueMap = data.reduce((acc, row) => {
+    const key = row['PRODUCT'];
+    const total = parseFloat(row['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0;
+    const qty = parseInt(row['QTY'], 10) || 0;
+
+    if (!acc[key]) {
+        acc[key] = { value: 0, qty: 0 };
+    }
+
+    acc[key].value += total;
+    acc[key].qty += qty;
+
+    return acc;
+}, {});
             const topProducts = Object.entries(productValueMap)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 5);
+    .sort(([, a], [, b]) => b.value - a.value)
+    .slice(0, 10);
 
             // --- 3. Top Stockists (by Value) ---
             const stockistValueMap = data.reduce((acc, row) => {
@@ -2519,21 +2645,31 @@ resultsSection.innerHTML=html;
             }, {});
             const topStockists = Object.entries(stockistValueMap)
                 .sort(([, a], [, b]) => b - a)
-                .slice(0, 5);
+                .slice(0, 10);
 
             // --- 4. Remarks Analysis (Root Cause) ---
             const remarksMap = data.reduce((acc, row) => {
-                const remark = (row['REMARKS'] || 'OTHER').toUpperCase().trim();
-                let key = 'OTHER';
-                if (remark.includes('DAMAGE')) key = 'DAMAGED';
+                const remark = (row['STATUS'] || 'OTHER').toUpperCase().trim();
+                let key = 'DAMAGE';
+                if (remark.includes('SHORT EXPIRY')) key = 'SHORT EXPIRY';
                 else if (remark.includes('EXPIRED')) key = 'EXPIRED';
-                else if (remark.includes('QC')) key = 'QUALITY ISSUE';
+                else if (remark.includes('LONG EXPIRY')) key = 'LONG EXPIRY';
                 
                 acc[key] = (acc[key] || 0) + (parseFloat(row['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0);
                 return acc;
             }, {});
             const topReasons = Object.entries(remarksMap)
                 .sort(([, a], [, b]) => b - a);
+// --- 5. State Breakdown (by Value) ---
+const stateValueMap = data.reduce((acc, row) => {
+    const state = row['STATE'] || 'Unknown';
+    const total = parseFloat(row['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0;
+    acc[state] = (acc[state] || 0) + total;
+    return acc;
+}, {});
+
+const stateBreakdown = Object.entries(stateValueMap)
+    .sort(([, a], [, b]) => b - a);
 
             // --- 5. Render HTML Dashboard ---
             let dateRangeText = "All Time";
@@ -2560,23 +2696,27 @@ resultsSection.innerHTML=html;
                                 <div class="field-value" style="font-size: 1.8rem; font-weight: 700; color: #b45309;">${totalProductsReturned.toLocaleString()}</div>
                             </div>
                             <div class="field" style="background: #f0fdf4; border-color: #10b981;">
-                                <div class="field-label" style="color: #047857;">Unique SR Documents</div>
+                                <div class="field-label" style="color: #047857;">Total Entries</div>
                                 <div class="field-value" style="font-size: 1.8rem; font-weight: 700; color: #047857;">${totalUniqueSR.toLocaleString()}</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="chart-box" style="min-width: 300px;">
-                        <h3>Top 5 Returned Products (Value)</h3>
+                        <h3>Top 10 Returned Products (Value)</h3>
                         <ol style="padding-left: 20px; font-size: 0.9rem;">
-                            ${topProducts.map(([product, value]) => 
-                                `<li>${product}: <strong>₹${value.toFixed(2)}</strong></li>`
-                            ).join('')}
+                            ${topProducts.map(([product, data]) => 
+    `<li>
+        ${product}: 
+        <strong>₹${data.value.toFixed(2)}</strong> 
+        (${data.qty} Qty)
+    </li>`
+).join('')}
                         </ol>
                     </div>
                     
                     <div class="chart-box" style="min-width: 300px;">
-                        <h3>Top 5 Stockists by Return Value</h3>
+                        <h3>Top 10 Stockists by Return (Value)</h3>
                         <ol style="padding-left: 20px; font-size: 0.9rem;">
                             ${topStockists.map(([stockist, value]) => 
                                 `<li>${stockist}: <strong>₹${value.toFixed(2)}</strong></li>`
@@ -2585,14 +2725,21 @@ resultsSection.innerHTML=html;
                     </div>
                     
                     <div class="chart-box" style="min-width: 300px;">
-                        <h3>Return Reason Breakdown (Value)</h3>
+                        <h3>Product Return Breakdown (Value)</h3>
                         <ol style="padding-left: 20px; font-size: 0.9rem;">
                             ${topReasons.map(([reason, value]) => 
                                 `<li>${reason}: <strong>₹${value.toFixed(2)}</strong> (${(value/totalReturnsValue * 100).toFixed(1)}%)</strong></li>`
                             ).join('')}
                         </ol>
                     </div>
-
+<div class="chart-box" style="min-width: 300px;">
+    <h3>State Breakdown (Value)</h3>
+    <ol style="padding-left: 20px; font-size: 0.9rem;">
+        ${stateBreakdown.map(([state, value]) => 
+            `<li>${state}: <strong>₹${value.toFixed(2)}</strong> (${(value/totalReturnsValue * 100).toFixed(1)}%)</li>`
+        ).join('')}
+    </ol>
+</div>
                 </div>
                 
                 <div class="chart-container" style="height: 350px; padding: 0 20px 20px 20px;">
