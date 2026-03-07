@@ -238,6 +238,54 @@
             background: linear-gradient(135deg, #4b5563 0%, #1f2937 100%);
         }
 
+        /* Toggle Switch Styles */
+        .toggle-switch-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-label {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 0.9rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+            background-color: #d1d5db;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            border: none;
+            padding: 0;
+            margin: 0 4px;
+        }
+
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+        }
+
+        .toggle-switch-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.active .toggle-switch-slider {
+            transform: translateX(22px);
+        }
+
         .results-section {
             padding: 10px;
             flex: 1;
@@ -749,6 +797,14 @@ color:#1e293b;
                 <div class="form-group">
                     <label for="expiryBeforeDate">EXPIRY - MM/YYYY</label>
                     <input type="month" id="expiryBeforeDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="expiryFromDate">From Date (R.GEN DATE) (Optional):</label>
+                    <input type="date" id="expiryFromDate">
+                </div>
+                <div class="form-group">
+                    <label for="expiryToDate">To Date (R.GEN DATE) (Optional):</label>
+                    <input type="date" id="expiryToDate">
                 </div>
                 <div class="form-group">
                     <label for="remarksKeyword">Remarks Keyword (e.g., DAMAGE):</label>
@@ -1388,88 +1444,69 @@ ${body}
 
 function openProductPopup(rows,title,mode){
 
+if(!rows || !Array.isArray(rows) || rows.length === 0) {
+    alert("No data to display");
+    return;
+}
+
 let totalQty=0;
 let totalVal=0;
 
-if(mode==="ALL"){
+// Get product name from first row
+const productName = rows[0]['PRODUCT'] || 'Product';
 
-const map={};
+// For Product Analysis, show product details grouped by stockist
+let htmlRows=rows.map((r,i)=>`
+<tr>
+<td>${r['STOCKIST NAME']}</td>
+<td style="text-align:center">${i+1}</td>
+<td style="text-align:center">${r['QTY']}</td>
+<td style="text-align:right">₹${(parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0).toFixed(2)}</td>
+</tr>`).join("");
 
 rows.forEach(r=>{
-const key=r['STOCKIST NAME'];
 const qty=parseInt(r['QTY'])||0;
 const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
-
-if(!map[key]) map[key]={qty:0,val:0,set:new Set()};
-map[key].qty+=qty;
-map[key].val+=val;
-map[key].set.add(r['SR Ref No.']);
-
 totalQty+=qty;
 totalVal+=val;
 });
 
-const body=Object.entries(map).map(([k,v])=>`
-<tr>
-<td>${k}</td>
-<td>${v.set.size}</td>
-<td>${v.qty}</td>
-<td>₹${v.val.toFixed(2)}</td>
-</tr>`).join("");
-
 showPopup(`
-<h2>Product: ${title}</h2>
-<div class="modal-stats">
-<div class="stat-card">Stockist: ${title}</div>
-<div class="stat-card">Total Qty: ${totalQty}</div>
-<div class="stat-card">Total Value: ₹${totalVal.toFixed(2)}</div>
+<div style="margin-bottom: 20px;">
+    <h2 style="color:#3730a3;margin-bottom:15px;font-size:1.3rem">Product: ${productName}</h2>
+    
+    <div style="display:flex;gap:20px;margin-bottom:20px;font-size:0.95rem">
+        <div>
+            <span style="color:#666;font-weight:500">Stockist: </span>
+            <span style="color:#1f2937;font-weight:600">${title}</span>
+        </div>
+        <div>
+            <span style="color:#666;font-weight:500">Total Qty: </span>
+            <span style="color:#1f2937;font-weight:600">${totalQty}</span>
+        </div>
+        <div>
+            <span style="color:#666;font-weight:500">Total Value: </span>
+            <span style="color:#1f2937;font-weight:600">₹${totalVal.toFixed(2)}</span>
+        </div>
+    </div>
 </div>
 
-<table class="product-table">
+<table class="product-table" style="width:100%;border-collapse:collapse;">
 <thead>
-<tr>
-<th>Stockist</th>
-<th>No. Times</th>
-<th>Qty</th>
-<th>Total</th>
+<tr style="background-color:#f3f4f6">
+<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">STOCKIST</th>
+<th style="text-align:center;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">NO. TIMES</th>
+<th style="text-align:center;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">QTY</th>
+<th style="text-align:right;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">TOTAL</th>
 </tr>
 </thead>
-<tbody>${body}</tbody>
+<tbody>
+${htmlRows}
+</tbody>
 </table>
-`);
-return;
+`, `Product: ${productName}`);
 }
 
-
-// SINGLE PRODUCT VIEW
-let htmlRows=rows.map((r,i)=>`
-<tr>
-<td>${i+1}</td>
-<td>${r['PRODUCT']}</td>
-<td>${r['BATCH']}</td>
-<td>${r['EXPIRY']}</td>
-<td>${r['QTY']}</td>
-<td>₹${(parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0).toFixed(2)}</td>
-</tr>`).join("");
-
-showPopup(`
-<h2>Stockist: ${title}</h2>
-
-<table class="product-table">
-<thead>
-<tr>
-<th>#</th>
-<th>Product</th>
-<th>Batch</th>
-<th>Exp</th>
-<th>Qty</th>
-<th>Value</th>
-</tr>
-</thead>
-<tbody>${htmlRows}</tbody>
-</table>
-`);
-}
 function openExpiryPopup(rows,title){
 
 let totalQty=0;
@@ -1513,6 +1550,95 @@ showPopup(`
 <tbody>${body}</tbody>
 </table>
 `);
+}
+
+// Function to sort Product Analysis report
+function sortProductAnalysis(sortBy) {
+    const data = window.productAnalysisData;
+    if (!data) return;
+    
+    // Sort data
+    if (sortBy === 'value') {
+        data.sort((a, b) => b.value - a.value);
+        document.getElementById('valueLabel').classList.add('active-label');
+        document.getElementById('qtyLabel').classList.remove('active-label');
+        document.getElementById('sortToggle').classList.add('active');
+    } else if (sortBy === 'qty') {
+        data.sort((a, b) => b.qty - a.qty);
+        document.getElementById('valueLabel').classList.remove('active-label');
+        document.getElementById('qtyLabel').classList.add('active-label');
+        document.getElementById('sortToggle').classList.remove('active');
+    }
+    
+    window.currentProductSort = sortBy;
+    
+    // Regenerate table rows
+    let rows = '';
+    data.forEach(c => {
+        rows += `
+<tr class="consolidated-row"
+onclick='openProductPopup(${JSON.stringify(c.rows)},"${c.label}","PRODUCT")'>
+<td>${c.label}</td>
+<td style="text-align:center">${c.count}</td>
+<td style="text-align:center">${c.qty}</td>
+<td style="text-align:right">₹${c.value.toFixed(2)}</td>
+</tr>
+`;
+    });
+    
+    // Update table body
+    document.getElementById('productAnalysisBody').innerHTML = rows;
+}
+
+// Toggle function for the switch
+function toggleProductSort() {
+    const currentSort = window.currentProductSort;
+    const newSort = currentSort === 'value' ? 'qty' : 'value';
+    sortProductAnalysis(newSort);
+}
+
+// Sort function for Expiry report
+function sortExpiryReport(sortBy) {
+    const data = window.expiryReportData;
+    if (!data) return;
+    
+    // Sort data
+    if (sortBy === 'value') {
+        data.sort((a, b) => b.value - a.value);
+        document.getElementById('expiryValueLabel').classList.add('active-label');
+        document.getElementById('expiryQtyLabel').classList.remove('active-label');
+        document.getElementById('expirySort Toggle').classList.add('active');
+    } else if (sortBy === 'qty') {
+        data.sort((a, b) => b.qty - a.qty);
+        document.getElementById('expiryValueLabel').classList.remove('active-label');
+        document.getElementById('expiryQtyLabel').classList.add('active-label');
+        document.getElementById('expirySort Toggle').classList.remove('active');
+    }
+    
+    window.currentExpirySort = sortBy;
+    
+    // Regenerate table rows
+    let rows = '';
+    data.forEach(c => {
+        rows += `
+<tr>
+<td>${c.stockist}</td>
+<td style="text-align:center">${c.count}</td>
+<td style="text-align:center">${c.qty}</td>
+<td style="text-align:right">₹${c.value.toFixed(2)}</td>
+</tr>
+`;
+    });
+    
+    // Update table body
+    document.getElementById('expiryReportBody').innerHTML = rows;
+}
+
+// Toggle function for Expiry sort
+function toggleExpirySort() {
+    const currentSort = window.currentExpirySort;
+    const newSort = currentSort === 'value' ? 'qty' : 'value';
+    sortExpiryReport(newSort);
 }
 
 function generateInvoiceHTML(rows){
@@ -2239,6 +2365,12 @@ const consolidated=Object.values(map);
 lastFilterResults=filtered;
 document.getElementById('exportProductBtn').style.display='block';
 
+// Sort by Value descending by default
+consolidated.sort((a, b) => b.value - a.value);
+
+// Store consolidated data for sorting
+window.productAnalysisData = consolidated;
+
 // Calculate Expiry Summary
 let expiredVal = 0;
 let shortExpiryVal = 0;
@@ -2277,6 +2409,23 @@ const expirySummaryHtml = `
 </div>
 `;
 
+// Generate sort toggle HTML
+const sortToggleHtml = `
+<div class="toggle-switch-container">
+    <span class="toggle-label">Sort By:</span>
+    <div style="display: flex; align-items: center; gap: 0; background: #f3f4f6; border-radius: 8px; padding: 2px;">
+        <span id="valueLabel" class="active-label" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">💰 Value</span>
+        <button class="toggle-switch" id="sortToggle" 
+                onclick="toggleProductSort()"
+                title="Toggle between Value and Quantity sort"
+                style="margin: 0 4px; width: 50px; height: 28px;">
+            <span class="toggle-switch-slider"></span>
+        </button>
+        <span id="qtyLabel" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">📦 Qty</span>
+    </div>
+</div>
+`;
+
 let html=`
 <h2 style="margin-bottom:12px;color:#3730a3">
 Product Analysis — ${product==="ALL" ? "All Products" : product}
@@ -2284,7 +2433,9 @@ Product Analysis — ${product==="ALL" ? "All Products" : product}
 
 ${expirySummaryHtml}
 
-<table class="product-table">
+${sortToggleHtml}
+
+<table class="product-table" id="productAnalysisTable">
 <thead>
 <tr>
 <th>Stockist</th>
@@ -2293,13 +2444,13 @@ ${expirySummaryHtml}
 <th>Value</th>
 </tr>
 </thead>
-<tbody>
+<tbody id="productAnalysisBody">
 `;
 
 consolidated.forEach(c=>{
 html+=`
 <tr class="consolidated-row"
-onclick='openProductPopup(${JSON.stringify(c.rows)},"${c.label}","${product}")'>
+onclick='openProductPopup(${JSON.stringify(c.rows)},"${c.label}","PRODUCT")'>
 <td>${c.label}</td>
 <td style="text-align:center">${c.count}</td>
 <td style="text-align:center">${c.qty}</td>
@@ -2313,6 +2464,10 @@ html+=`</tbody></table>`;
 resultsSection.innerHTML =
 generateSummaryCards(filtered) + html;
 
+// Set current sort state
+window.currentProductSort = 'value';
+// Toggle state is already active (blue) by default in HTML
+
             } catch (err) {
                 resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
             }
@@ -2323,6 +2478,8 @@ generateSummaryCards(filtered) + html;
             e.preventDefault();
             const sheetId = document.getElementById('sheetId').value.trim();
             const expiryDate = document.getElementById('expiryBeforeDate').value;
+            const expiryFromDate = document.getElementById('expiryFromDate').value;
+            const expiryToDate = document.getElementById('expiryToDate').value;
             const remarks = document.getElementById('remarksKeyword').value.trim().toUpperCase();
             const stockist = document.getElementById('expiryStockistSelect').value.trim();
             const resultsSection = document.getElementById('resultsSection');
@@ -2343,6 +2500,17 @@ generateSummaryCards(filtered) + html;
                 
                 const [year, month] = expiryDate.split('-').map(Number);
                 
+                // Set up date range if provided
+                const isDateRangeSet = expiryFromDate && expiryToDate;
+                let from = null;
+                let to = null;
+                if (isDateRangeSet) {
+                    from = new Date(expiryFromDate); 
+                    from.setHours(0, 0, 0, 0); 
+                    to = new Date(expiryToDate);
+                    to.setHours(23, 59, 59, 999);
+                }
+                
                 const filtered = data.filter(row => {
                     // 1. Expiry Date Filter (Product expiry must be BEFORE the filter date)
                     const expiryValue = row['EXPIRY'];
@@ -2358,12 +2526,20 @@ if(y < 100) y += 2000;
 // match selected month & year
 if(m !== month || y !== year) return false;
                     
-                    // 2. Remarks Filter
+                    // 2. Date Range Filter (Applied only if BOTH dates are set)
+                    if (isDateRangeSet) {
+                        const genDate = parseDate(row['R.GEN DATE']);
+                        if (!genDate || isNaN(genDate.getTime())) return false; 
+                        
+                        if (genDate.getTime() < from.getTime() || genDate.getTime() > to.getTime()) return false;
+                    }
+                    
+                    // 3. Remarks Filter
                     if (remarks && row['REMARKS'].toUpperCase().indexOf(remarks) === -1) {
                         return false;
                     }
                     
-                    // 3. Stockist Filter
+                    // 4. Stockist Filter
                     if (stockist && row['STOCKIST NAME'] !== stockist) {
                         return false;
                     }
@@ -2392,20 +2568,45 @@ map[key].count = [...new Set(map[key].rows.map(x=>x['SR Ref No.']))].length;
 
 const consolidated=Object.values(map);
 
+// Sort by Value descending by default
+consolidated.sort((a, b) => b.value - a.value);
+
+// Store for sorting
+window.expiryReportData = consolidated;
+
 lastFilterResults=consolidated.map(c=>({
 Stockist:c.stockist,
 Times:c.count,
 Qty:c.qty,
 Value:c.value.toFixed(2)
 }));
-document.getElementById('exportProductBtn').style.display='block';
+document.getElementById('exportExpiryBtn').style.display='block';
+
+// Generate sort toggle HTML
+const expirySortToggleHtml = `
+<div class="toggle-switch-container">
+    <span class="toggle-label">Sort By:</span>
+    <div style="display: flex; align-items: center; gap: 0; background: #f3f4f6; border-radius: 8px; padding: 2px;">
+        <span id="expiryValueLabel" class="active-label" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">💰 Value</span>
+        <button class="toggle-switch" id="expirySort Toggle" 
+                onclick="toggleExpirySort()"
+                title="Toggle between Value and Quantity sort"
+                style="margin: 0 4px; width: 50px; height: 28px;">
+            <span class="toggle-switch-slider"></span>
+        </button>
+        <span id="expiryQtyLabel" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">📦 Qty</span>
+    </div>
+</div>
+`;
 
 let html=`
 <h2 style="margin-bottom:12px;color:#3730a3">
 Expiry / Quality Report
 </h2>
 
-<table class="product-table">
+${expirySortToggleHtml}
+
+<table class="product-table" id="expiryReportTable">
 <thead>
 <tr>
 <th>Stockist</th>
@@ -2414,7 +2615,7 @@ Expiry / Quality Report
 <th>Value</th>
 </tr>
 </thead>
-<tbody>
+<tbody id="expiryReportBody">
 `;
 
 consolidated.forEach(c=>{
@@ -2433,6 +2634,10 @@ html+=`</tbody></table>`;
 
 resultsSection.innerHTML =
     generateSummaryCards(filtered) + html;
+
+// Set current sort state for expiry report
+window.currentExpirySort = 'value';
+// Toggle is active (blue) by default in HTML
 
             } catch (err) {
                 resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
@@ -3166,6 +3371,25 @@ return o;
 
 exportToCSV(data,filename);
 }
+
+// Expose all functions to global scope (window)
+window.openTab = window.openTab || openTab;
+window.openProductPopup = openProductPopup;
+window.toggleExpand = toggleExpand;
+window.downloadSR = downloadSR;
+window.applyExpiryHighlighting = applyExpiryHighlighting;
+window.openDrill = openDrill;
+window.closeAnalysisModal = closeAnalysisModal;
+window.closeDrill = closeDrill;
+window.showPopup = showPopup;
+window.exportPopupTable = exportPopupTable;
+window.exportToCSV = exportToCSV;
+window.exportToXLS = exportToXLS;
+window.exportExpandedCardData = exportExpandedCardData;
+window.sortProductAnalysis = sortProductAnalysis;
+window.toggleProductSort = toggleProductSort;
+window.sortExpiryReport = sortExpiryReport;
+window.toggleExpirySort = toggleExpirySort;
     </script>
 
 <div id="drillPopup" style="
