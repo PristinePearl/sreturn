@@ -1477,10 +1477,6 @@ showPopup(`
     
     <div style="display:flex;gap:20px;margin-bottom:20px;font-size:0.95rem">
         <div>
-            <span style="color:#666;font-weight:500">Stockist: </span>
-            <span style="color:#1f2937;font-weight:600">${title}</span>
-        </div>
-        <div>
             <span style="color:#666;font-weight:500">Total Qty: </span>
             <span style="color:#1f2937;font-weight:600">${totalQty}</span>
         </div>
@@ -1509,8 +1505,16 @@ ${htmlRows}
 
 function openExpiryPopup(rows,title){
 
+if(!rows || !Array.isArray(rows) || rows.length === 0) {
+    alert("No data to display");
+    return;
+}
+
 let totalQty=0;
 let totalVal=0;
+
+// Get first product for title
+const productName = rows[0]['PRODUCT'] || 'Product';
 
 const body=rows.map(r=>{
 const qty=parseInt(r['QTY'])||0;
@@ -1519,37 +1523,67 @@ const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
 totalQty+=qty;
 totalVal+=val;
 
+// Get expiry class and styling
+const expiryClass = getExpiryClass(r['EXPIRY']);
+let rowStyle = "border-bottom:1px solid #e5e7eb";
+let productColor = "#1f2937";
+let productBg = "transparent";
+let bgStyle = "";
+
+if(expiryClass === "expired") {
+    productBg = "#fee2e2";
+    productColor = "#991b1b";
+    bgStyle = `background-color:${productBg};`;
+} else if(expiryClass === "short-expiry") {
+    productBg = "#ffedd5";
+    productColor = "#9a3412";
+    bgStyle = `background-color:${productBg};`;
+}
+
 return `
-<tr class="${getExpiryClass(r['EXPIRY'])}">
-<td>${r['PRODUCT']}</td>
-<td>${r['BATCH']}</td>
-<td>${r['EXPIRY']}</td>
-<td>${qty}</td>
-<td>₹${val.toFixed(2)}</td>
+<tr style="${bgStyle}${rowStyle}">
+<td style="padding:12px;text-align:left;color:${productColor};font-weight:600">${r['PRODUCT']}</td>
+<td style="padding:12px;text-align:left;color:${productColor}">${r['BATCH']}</td>
+<td style="padding:12px;text-align:center;color:${productColor}">${r['EXPIRY']}</td>
+<td style="padding:12px;text-align:center;color:${productColor}">${qty}</td>
+<td style="padding:12px;text-align:right;font-weight:600;color:${productColor}">₹${val.toFixed(2)}</td>
 </tr>
 `;
 }).join("");
 
 showPopup(`
-<div class="modal-stats">
-<div class="stat-card">Product: ${title}</div>
-<div class="stat-card">Total Qty: ${totalQty}</div>
-<div class="stat-card">Total Value: ₹${totalVal.toFixed(2)}</div>
+<div style="margin-bottom: 20px;">
+    <h2 style="color:#3730a3;margin-bottom:15px;font-size:1.3rem">${title}</h2>
+    
+    <div style="display:flex;gap:20px;margin-bottom:20px;font-size:0.95rem">
+        <div>
+            <span style="color:#666;font-weight:500">Stockist: </span>
+            <span style="color:#1f2937;font-weight:600">${title}</span>
+        </div>
+        <div>
+            <span style="color:#666;font-weight:500">Total Qty: </span>
+            <span style="color:#1f2937;font-weight:600">${totalQty}</span>
+        </div>
+        <div>
+            <span style="color:#666;font-weight:500">Total Value: </span>
+            <span style="color:#1f2937;font-weight:600">₹${totalVal.toFixed(2)}</span>
+        </div>
+    </div>
 </div>
 
-<table class="product-table">
+<table class="product-table" style="width:100%;border-collapse:collapse;">
 <thead>
-<tr>
-<th>Product</th>
-<th>Batch</th>
-<th>Expiry</th>
-<th>Qty</th>
-<th>Total</th>
+<tr style="background-color:#f3f4f6">
+<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">PRODUCT</th>
+<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">BATCH</th>
+<th style="text-align:center;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">EXPIRY</th>
+<th style="text-align:center;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">QTY</th>
+<th style="text-align:right;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">TOTAL</th>
 </tr>
 </thead>
 <tbody>${body}</tbody>
 </table>
-`);
+`, `${title}`);
 }
 
 // Function to sort Product Analysis report
@@ -2414,14 +2448,14 @@ const sortToggleHtml = `
 <div class="toggle-switch-container">
     <span class="toggle-label">Sort By:</span>
     <div style="display: flex; align-items: center; gap: 0; background: #f3f4f6; border-radius: 8px; padding: 2px;">
-        <span id="valueLabel" class="active-label" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">📦 Qty</span>
+        <span id="valueLabel" class="active-label" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">💰 Value</span>
         <button class="toggle-switch" id="sortToggle" 
                 onclick="toggleProductSort()"
                 title="Toggle between Value and Quantity sort"
                 style="margin: 0 4px; width: 50px; height: 28px;">
             <span class="toggle-switch-slider"></span>
         </button>
-        <span id="qtyLabel" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">💰 Value</span>
+        <span id="qtyLabel" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">📦 Qty</span>
     </div>
 </div>
 `;
@@ -2587,14 +2621,14 @@ const expirySortToggleHtml = `
 <div class="toggle-switch-container">
     <span class="toggle-label">Sort By:</span>
     <div style="display: flex; align-items: center; gap: 0; background: #f3f4f6; border-radius: 8px; padding: 2px;">
-        <span id="expiryValueLabel" class="active-label" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">📦 Qty</span>
+        <span id="expiryValueLabel" class="active-label" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">💰 Value</span>
         <button class="toggle-switch" id="expirySort Toggle" 
                 onclick="toggleExpirySort()"
                 title="Toggle between Value and Quantity sort"
                 style="margin: 0 4px; width: 50px; height: 28px;">
             <span class="toggle-switch-slider"></span>
         </button>
-        <span id="expiryQtyLabel" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">💰 Value</span>
+        <span id="expiryQtyLabel" style="padding: 6px 12px; cursor: pointer; border-radius: 6px;">📦 Qty</span>
     </div>
 </div>
 `;
