@@ -1480,21 +1480,45 @@ let totalVal=0;
 // Get product name from first row
 const productName = rows[0]['PRODUCT'] || 'Product';
 
-// For Product Analysis, show product details grouped by stockist
-let htmlRows=rows.map((r,i)=>`
-<tr>
-<td>${r['STOCKIST NAME']}</td>
-<td style="text-align:center">${i+1}</td>
-<td style="text-align:center">${r['QTY']}</td>
-<td style="text-align:right">₹${(parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0).toFixed(2)}</td>
-</tr>`).join("");
-
-rows.forEach(r=>{
-const qty=parseInt(r['QTY'])||0;
-const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
-totalQty+=qty;
-totalVal+=val;
+// Consolidate by STOCKIST NAME
+const stockistMap = {};
+rows.forEach(r => {
+    const stockist = r['STOCKIST NAME'] || 'Unknown';
+    const qty = parseInt(r['QTY']) || 0;
+    const val = parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0;
+    
+    if (!stockistMap[stockist]) {
+        stockistMap[stockist] = {
+            qty: 0,
+            value: 0,
+            count: 0
+        };
+    }
+    
+    stockistMap[stockist].qty += qty;
+    stockistMap[stockist].value += val;
+    stockistMap[stockist].count += 1;
 });
+
+// Convert to array and sort by value descending
+const consolidatedRows = Object.entries(stockistMap)
+    .map(([stockist, data]) => ({ stockist, ...data }))
+    .sort((a, b) => b.value - a.value);
+
+// Calculate totals
+consolidatedRows.forEach(row => {
+    totalQty += row.qty;
+    totalVal += row.value;
+});
+
+// Generate HTML rows
+let htmlRows = consolidatedRows.map((row, i) => `
+<tr>
+<td>${row.stockist}</td>
+<td style="text-align:center">${row.count}</td>
+<td style="text-align:center">${row.qty}</td>
+<td style="text-align:right">₹${row.value.toFixed(2)}</td>
+</tr>`).join("");
 
 showPopup(`
 <div style="margin-bottom: 20px;">
@@ -1514,11 +1538,11 @@ showPopup(`
 
 <table class="product-table" style="width:100%;border-collapse:collapse;">
 <thead>
-<tr style="background-color:#f3f4f6">
-<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">STOCKIST</th>
-<th style="text-align:center;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">NO. TIMES</th>
-<th style="text-align:center;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">QTY</th>
-<th style="text-align:right;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">TOTAL</th>
+<tr style="background-color:#0f172a;color:black">
+<th style="text-align:left;padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">STOCKIST</th>
+<th style="text-align:center;padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">NO. TIMES</th>
+<th style="text-align:center;padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">QTY</th>
+<th style="text-align:right;padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">TOTAL</th>
 </tr>
 </thead>
 <tbody>
@@ -1598,12 +1622,12 @@ showPopup(`
 
 <table class="product-table" style="width:100%;border-collapse:collapse;">
 <thead>
-<tr style="background-color:#f3f4f6">
-<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">PRODUCT</th>
-<th style="text-align:left;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">BATCH</th>
-<th style="text-align:center;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">EXPIRY</th>
-<th style="text-align:center;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">QTY</th>
-<th style="text-align:right;padding:12px;border-bottom:2px solid #e5e7eb;font-weight:600;color:#1f2937">TOTAL</th>
+<tr style="background-color:#0f172a;color:black">
+<th style="text-align:left;padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">PRODUCT</th>
+<th style="text-align:left;padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">BATCH</th>
+<th style="text-align:center;padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">EXPIRY</th>
+<th style="text-align:center;padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">QTY</th>
+<th style="text-align:right;padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">TOTAL</th>
 </tr>
 </thead>
 <tbody>${body}</tbody>
@@ -3326,11 +3350,10 @@ Product : ${title}
 
 <table class="product-table">
 <thead>
-<tr>
+<tr style="background-color:#0f172a;color:black">
 ${mode==="ALL"
-? `<th>Product</th><th>No. Times</th><th>Qty</th><th>Total</th>`
-: `<th>#</th><th>Stockist</th><th>Qty</th><th>Value</th>`
-
+? `<th style="padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px">Product</th><th style="padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px;text-align:center">No. Times</th><th style="padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px;text-align:center">Qty</th><th style="padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px;text-align:right">Total</th>`
+: `<th style="padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px;text-align:center">#</th><th style="padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px;text-align:left">Stockist</th><th style="padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px;text-align:center">Qty</th><th style="padding:14px;border-bottom:3px solid #0891b2;font-weight:700;color:black;font-size:0.95rem;letter-spacing:0.5px;text-align:right">Value</th>`
 }
 </tr>
 </thead>
