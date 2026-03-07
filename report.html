@@ -729,6 +729,14 @@ color:#1e293b;
                     <label for="batchInput">Batch No (Optional):</label>
                     <input type="text" id="batchInput" placeholder="Enter Batch No">
                 </div>
+                <div class="form-group">
+                    <label for="productFromDate">From Date (R.GEN DATE):</label>
+                    <input type="date" id="productFromDate">
+                </div>
+                <div class="form-group">
+                    <label for="productToDate">To Date (R.GEN DATE):</label>
+                    <input type="date" id="productToDate">
+                </div>
                 <button type="submit" class="btn">Generate Product Report</button>
                 <button type="button" class="btn btn-secondary" id="exportProductBtn" style="display: none;">EXPORT REPORT</button>
             </form>
@@ -992,8 +1000,8 @@ select.appendChild(opt);
 
         // --- Export Functions ---
 
-        // Function to export the results array to CSV/Excel
-function exportToCSV(data, filename="Report"){
+        // Function to export data to Excel XLS format
+function exportToXLS(data, filename="Report"){
 try{
 
 if(!Array.isArray(data) || !data.length){
@@ -1001,45 +1009,40 @@ alert("No data to export");
 return;
 }
 
-
 const headers = Object.keys(data[0]);
 
-let html = "<table border='1'><tr>";
+// Create CSV content (better compatibility with Excel)
+let csv = headers.map(h => `"${h}"`).join(',') + '\n';
 
-headers.forEach(h=>{
-html += "<th>"+h+"</th>";
+data.forEach(row => {
+    const values = headers.map(h => {
+        const val = row[h] ?? "";
+        // Escape quotes and wrap in quotes
+        const escaped = String(val).replace(/"/g, '""');
+        return `"${escaped}"`;
+    });
+    csv += values.join(',') + '\n';
 });
 
-html += "</tr>";
-
-data.forEach(row=>{
-html += "<tr>";
-headers.forEach(h=>{
-html += "<td>"+(row[h] ?? "")+"</td>";
-});
-html += "</tr>";
-});
-
-html += "</table>";
-
-const blob = new Blob(
-["\ufeff",html],
-{type:"application/vnd.ms-excel"}
-);
+// Create Blob with UTF-8 BOM for proper Excel encoding
+const blob = new Blob(["\ufeff", csv], {type: "application/vnd.ms-excel;charset=utf-8"});
 
 const url = URL.createObjectURL(blob);
-
-const a=document.createElement("a");
-a.href=url;
+const a = document.createElement("a");
+a.href = url;
 a.download = filename + ".xls";
 a.click();
 
 URL.revokeObjectURL(url);
-}catch(err){
-console.error("EXPORT ERROR:",err);
-alert("Export failed — check console");
+
+} catch(err) {
+    console.error("EXPORT ERROR:", err);
+    alert("Export failed — check console");
 }
 }
+
+// Alias for backward compatibility
+const exportToCSV = exportToXLS;
 
         // Function to export a single expanded card's data (used by the Export This SR button)
         function exportExpandedCardData(srRef) {
@@ -1279,7 +1282,7 @@ const map={};
 rows.forEach(r=>{
 const key=r['STOCKIST NAME'];
 const qty=parseInt(r['QTY'])||0;
-const val=parseFloat(r['TOTAL'])||0;
+const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
 
 if(!map[key]) map[key]={qty:0,val:0,set:new Set()};
 
@@ -1336,7 +1339,7 @@ let totalVal2=0;
 const body=rows.map((r,i)=>{
 
 const qty=parseInt(r['QTY'])||0;
-const val=parseFloat(r['TOTAL'])||0;
+const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
 
 totalQty2+=qty;
 totalVal2+=val;
@@ -1395,7 +1398,7 @@ const map={};
 rows.forEach(r=>{
 const key=r['STOCKIST NAME'];
 const qty=parseInt(r['QTY'])||0;
-const val=parseFloat(r['TOTAL'])||0;
+const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
 
 if(!map[key]) map[key]={qty:0,val:0,set:new Set()};
 map[key].qty+=qty;
@@ -1446,7 +1449,7 @@ let htmlRows=rows.map((r,i)=>`
 <td>${r['BATCH']}</td>
 <td>${r['EXPIRY']}</td>
 <td>${r['QTY']}</td>
-<td>₹${parseFloat(r['TOTAL']).toFixed(2)}</td>
+<td>₹${(parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0).toFixed(2)}</td>
 </tr>`).join("");
 
 showPopup(`
@@ -1474,7 +1477,7 @@ let totalVal=0;
 
 const body=rows.map(r=>{
 const qty=parseInt(r['QTY'])||0;
-const val=parseFloat(r['TOTAL'])||0;
+const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
 
 totalQty+=qty;
 totalVal+=val;
@@ -1525,7 +1528,7 @@ const tableRows = rows.map((row,i)=>{
 const rate=parseFloat(row['RATE'])||0;
 const taxable=parseFloat(row['TAXABLE'])||0;
 const gst=parseFloat(row['GST VALUE'])||0;
-const total=parseFloat(row['TOTAL'])||0;
+const total=parseFloat(row['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
 
 totalTaxable+=taxable;
 totalGST+=gst;
@@ -1781,7 +1784,7 @@ const productSet = new Set();
 
 data.forEach(r=>{
 totalQty += parseInt(r['QTY']) || 0;
-totalValue += parseFloat(r['TOTAL']) || 0;
+totalValue += parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0;
 if(r['SR Ref No.']) srSet.add(r['SR Ref No.']);
 if(r['PRODUCT']) productSet.add(r['PRODUCT']);
 });
@@ -2168,6 +2171,8 @@ win.print();
 document.getElementById("productSelect").value ||= "ALL";
             const product = document.getElementById('productSelect').value.trim();
             const batch = document.getElementById('batchInput').value.trim();
+            const fromDate = document.getElementById('productFromDate').value;
+            const toDate = document.getElementById('productToDate').value;
             const resultsSection = document.getElementById('resultsSection');
             
             hideAllExportButtons();
@@ -2178,6 +2183,17 @@ document.getElementById("productSelect").value ||= "ALL";
             try {
                 const data = await fetchSheetData(sheetId);
                 
+                // LOGIC: Check if BOTH dates are set
+                const isDateRangeSet = fromDate && toDate;
+                let from = null;
+                let to = null;
+                if (isDateRangeSet) {
+                    from = new Date(fromDate); 
+                    from.setHours(0, 0, 0, 0); 
+                    to = new Date(toDate);
+                    to.setHours(23, 59, 59, 999);
+                }
+                
                 const filtered = data.filter(row => {
 
 if(product !== "ALL" && row['PRODUCT'] !== product)
@@ -2185,6 +2201,14 @@ return false;
 
 if(batch && row['BATCH'].toUpperCase() !== batch.toUpperCase())
 return false;
+
+// Date Range Filter (Applied only if BOTH dates are set)
+if (isDateRangeSet) {
+    const genDate = parseDate(row['R.GEN DATE']);
+    if (!genDate || isNaN(genDate.getTime())) return false; 
+    
+    if (genDate.getTime() < from.getTime() || genDate.getTime() > to.getTime()) return false;
+}
 
 return true;
 });
@@ -2197,7 +2221,7 @@ const map={};
 filtered.forEach(r=>{
 const key = product==="ALL" ? r['PRODUCT'] : r['STOCKIST NAME'];
 const qty=parseInt(r['QTY'])||0;
-const val=parseFloat(r['TOTAL'])||0;
+const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
 
 if(!map[key])
 map[key]={label:key,qty:0,value:0,rows:[],sr:new Set()};
@@ -2215,10 +2239,50 @@ const consolidated=Object.values(map);
 lastFilterResults=filtered;
 document.getElementById('exportProductBtn').style.display='block';
 
+// Calculate Expiry Summary
+let expiredVal = 0;
+let shortExpiryVal = 0;
+let longExpiryVal = 0;
+
+filtered.forEach(r => {
+    const expiryValue = parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0;
+    const expiryClass = getExpiryClass(r['EXPIRY']);
+    
+    if (expiryClass === 'expired') {
+        expiredVal += expiryValue;
+    } else if (expiryClass === 'short-expiry') {
+        shortExpiryVal += expiryValue;
+    } else {
+        longExpiryVal += expiryValue;
+    }
+});
+
+// Generate Expiry Summary HTML
+const expirySummaryHtml = `
+<div class="summary-container" style="margin-bottom: 15px;">
+    <div class="summary-card" style="background-color: #fee2e2; border-left: 4px solid #dc2626;">
+        <div class="summary-title" style="color: #dc2626;">Expired</div>
+        <div class="summary-value" style="color: #dc2626;">₹${expiredVal.toFixed(2)}</div>
+    </div>
+    
+    <div class="summary-card" style="background-color: #fed7aa; border-left: 4px solid #f97316;">
+        <div class="summary-title" style="color: #f97316;">Short Expiry</div>
+        <div class="summary-value" style="color: #f97316;">₹${shortExpiryVal.toFixed(2)}</div>
+    </div>
+    
+    <div class="summary-card" style="background-color: #dcfce7; border-left: 4px solid #059669;">
+        <div class="summary-title" style="color: #059669;">Long Expiry</div>
+        <div class="summary-value" style="color: #059669;">₹${longExpiryVal.toFixed(2)}</div>
+    </div>
+</div>
+`;
+
 let html=`
 <h2 style="margin-bottom:12px;color:#3730a3">
 Product Analysis — ${product==="ALL" ? "All Products" : product}
 </h2>
+
+${expirySummaryHtml}
 
 <table class="product-table">
 <thead>
@@ -2315,7 +2379,7 @@ const map={};
 filtered.forEach(r=>{
 const key=r['STOCKIST NAME'];
 const qty=parseInt(r['QTY'])||0;
-const val=parseFloat(r['TOTAL'])||0;
+const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
 
 if(!map[key]) map[key]={stockist:key,qty:0,value:0,rows:[],count:0};
 
@@ -2971,7 +3035,7 @@ const srSet=new Set();
 const tableRows=rows.map(r=>{
 
 const qty=parseInt(r['QTY'])||0;
-const val=parseFloat(r['TOTAL'])||0;
+const val=parseFloat(r['TOTAL'].replace(/[^0-9.-]+/g,""))||0;
 
 totalQty+=qty;
 totalVal+=val;
@@ -2979,7 +3043,7 @@ srSet.add(r['SR Ref No.']);
 
 return `
 <tr class="${getExpiryClass(r['EXPIRY'])}">
-<td>${r['Stockist']}</td>
+<td>${r['STOCKIST NAME'] || 'N/A'}</td>
 <td style="text-align:center">${qty}</td>
 <td style="text-align:right">₹${val.toFixed(2)}</td>
 </tr>`;
@@ -3024,6 +3088,11 @@ document.getElementById("analysisModal").style.display="flex";
 function closeAnalysisModal(){
 document.getElementById("analysisModal").style.display="none";
 }
+
+function closeDrill(){
+document.getElementById("drillPopup").style.display="none";
+}
+
 function showPopup(html,title="Report"){
 
 let modal=document.getElementById("globalModal");
