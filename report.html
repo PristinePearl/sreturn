@@ -696,11 +696,11 @@ color:#1e293b;
             <form class="search-form" id="dateStockistForm">
                  <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">Date / Stockist Report (Dates Optional)</h3>
                 <div class="form-group">
-                    <label for="fromDate">From Date (C. INV DATE):</label>
+                    <label for="fromDate">From Date (R.GEN DATE):</label>
                     <input type="date" id="fromDate">
                 </div>
                 <div class="form-group">
-                    <label for="toDate">To Date (C. INV DATE):</label>
+                    <label for="toDate">To Date (R.GEN DATE):</label>
                     <input type="date" id="toDate">
                 </div>
                 <div class="form-group">
@@ -762,11 +762,11 @@ color:#1e293b;
             <form class="search-form" id="chartReportForm">
                 <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">Product & Stockist Graphical Report (Dates Optional)</h3>
                  <div class="form-group">
-                    <label for="chartFromDate">From Date (C. INV DATE):</label>
+                    <label for="chartFromDate">From Date (R.GEN DATE):</label>
                     <input type="date" id="chartFromDate">
                 </div>
                 <div class="form-group">
-                    <label for="chartToDate">To Date (C. INV DATE):</label>
+                    <label for="chartToDate">To Date (R.GEN DATE):</label>
                     <input type="date" id="chartToDate">
                 </div>
                 <div class="form-group">
@@ -790,11 +790,11 @@ color:#1e293b;
             <form class="search-form" id="aiAnalysisForm">
                 <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">AI & Trend Analysis Report (Dates Optional)</h3>
                  <div class="form-group">
-                    <label for="aiFromDate">From Date (C. INV DATE):</label>
+                    <label for="aiFromDate">From Date (R.GEN DATE):</label>
                     <input type="date" id="aiFromDate">
                 </div>
                 <div class="form-group">
-                    <label for="aiToDate">To Date (C. INV DATE):</label>
+                    <label for="aiToDate">To Date (R.GEN DATE):</label>
                     <input type="date" id="aiToDate">
                 </div>
                 <div class="form-group">
@@ -815,12 +815,12 @@ color:#1e293b;
 <h3 style="font-size:1rem;color:#3730a3;">Print Document</h3>
 
 <div class="form-group">
-<label>From Date (C. INV DATE)</label>
+<label>From Date (R.GEN DATE)</label>
 <input type="date" id="printFrom">
 </div>
 
 <div class="form-group">
-<label>To Date (C. INV DATE)</label>
+<label>To Date (R.GEN DATE)</label>
 <input type="date" id="printTo">
 </div>
 
@@ -972,10 +972,14 @@ select.appendChild(opt);
             return data;
         }
 
-        // Utility function to parse DD/MM/YYYY to a Date object
+        // Utility function to parse DD/MM/YYYY or DD/MM/YYYY HH:MM:SS to a Date object
         function parseDate(dateString) {
             if (!dateString) return null;
-            const parts = dateString.split('/');
+            
+            // Remove time portion if it exists (format: DD/MM/YYYY HH:MM:SS)
+            const datePart = dateString.split(' ')[0]; // Gets DD/MM/YYYY
+            
+            const parts = datePart.split('/');
             if (parts.length === 3) {
                 // new Date(year, monthIndex, day) - Month is 0-indexed
                 const date = new Date(parts[2], parts[1] - 1, parts[0]);
@@ -2066,7 +2070,7 @@ document.getElementById('printPdfBtn').style.display='block';
                     
                     // 2. Date Range Filter (Applied only if BOTH dates are set)
                     if (isDateRangeSet) {
-                        const uploaded = parseDate(row['C. INV DATE']);
+                        const uploaded = parseDate(row['R.GEN DATE']);
                         if (!uploaded || isNaN(uploaded.getTime())) return false; 
                         
                         if (uploaded.getTime() < from.getTime() || uploaded.getTime() > to.getTime()) return false;
@@ -2186,7 +2190,7 @@ return true;
 });
 
                 // Report Headers
-                const headers = ['SR Ref No.', 'C. INV DATE', 'STOCKIST NAME', 'BATCH', 'EXPIRY', 'QTY', 'TOTAL'];
+                const headers = ['SR Ref No.', 'R.GEN DATE', 'STOCKIST NAME', 'BATCH', 'EXPIRY', 'QTY', 'TOTAL'];
                 // CONSOLIDATE BY STOCKIST
 const map={};
 
@@ -2419,7 +2423,7 @@ resultsSection.innerHTML =
 
                     // 3. Date Range Filter (Applied only if BOTH dates are set)
                     if (isDateRangeSet) {
-                        const uploaded = parseDate(row['C. INV DATE']);
+                        const uploaded = parseDate(row['R.GEN DATE']);
                         if (!uploaded || isNaN(uploaded.getTime())) return false; 
                         
                         if (uploaded.getTime() < from.getTime() || uploaded.getTime() > to.getTime()) return false;
@@ -2587,7 +2591,7 @@ generateChartReport(filtered, product, stockist);
                 const filtered = data.filter(row => {
                     // Apply Date Range Filter (Applied only if BOTH dates are set)
                     if (isDateRangeSet) {
-                        const invDate = parseDate(row['C. INV DATE']);
+                        const invDate = parseDate(row['R.GEN DATE']);
                         if (!invDate || isNaN(invDate.getTime())) return false; 
                         
                         if (invDate.getTime() < from.getTime() || invDate.getTime() > to.getTime()) return false;
@@ -2744,7 +2748,7 @@ const stateBreakdown = Object.entries(stateValueMap)
                 
                 <div class="chart-container" style="height: 350px; padding: 0 20px 20px 20px;">
                     <div class="chart-box" style="max-width: 100%; min-width: 100%; height: 100%;">
-                        <h3>Monthly Return Trend (by C. Inv Date Value)</h3>
+                        <h3>Monthly Return Trend (by R.Gen Date Value)</h3>
                         <canvas id="monthlyTrendChart"></canvas>
                     </div>
                 </div>
@@ -2757,9 +2761,9 @@ const stateBreakdown = Object.entries(stateValueMap)
             // Get the selected chart type (MODIFIED)
             const chartType = document.querySelector('input[name="trendChartType"]:checked').value;
             
-            // Group and aggregate data by month (C. INV DATE)
+            // Group and aggregate data by month (R.GEN DATE)
             const monthlyDataMap = data.reduce((acc, row) => {
-                const invDate = parseDate(row['C. INV DATE']);
+                const invDate = parseDate(row['R.GEN DATE']);
                 if (invDate) {
                     // Use YYYY-MM for sorting and grouping
                     const monthKey = `${invDate.getFullYear()}-${String(invDate.getMonth() + 1).padStart(2, '0')}`;
