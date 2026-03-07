@@ -54,8 +54,8 @@
         }
 
         .header {
-            /* CHANGED: From Deep Red/Maroon Gradient to Deep Indigo Gradient */
-            background: linear-gradient(135deg, #3730a3 0%, #4f46e5 100%); 
+            /* Dual Indigo Gradient - Very Dark to Bright Indigo */
+            background: linear-gradient(135deg, #312e81 0%, #6366f1 100%); 
             color: white;
             padding: 15px 20px;
             text-align: center;
@@ -122,16 +122,16 @@
         .tab-button.active {
             background: #f1f5f9;
             font-weight: 600;
-            /* CHANGED: From Dark Maroon to Dark Indigo */
-            color: #3730a3; 
-            /* CHANGED: From Red to Indigo */
-            border-left: 4px solid #4f46e5; 
+            /* Dual Indigo - Dark shade for text */
+            color: #312e81; 
+            /* Dual Indigo - Bright shade for border */
+            border-left: 4px solid #6366f1; 
         }
 
         .tab-button:hover:not(.active) {
             background: #f9fafb;
-            /* CHANGED: From Dark Maroon to Dark Indigo */
-            color: #3730a3; 
+            /* Dual Indigo - Dark shade for hover text */
+            color: #312e81; 
         }
 
         .search-section {
@@ -194,10 +194,10 @@
         
         .form-group input:focus, .form-group select:focus {
             outline: none;
-            /* CHANGED: From Red to Indigo */
-            border-color: #4f46e5; 
-            /* CHANGED: From Red Shadow to Indigo Shadow */
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); 
+            /* Dual Indigo - Bright shade for border */
+            border-color: #6366f1; 
+            /* Dual Indigo - Bright shade shadow */
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); 
         }
 
         .form-group input::placeholder {
@@ -207,8 +207,8 @@
 
         .btn {
             padding: 12px 20px;
-            /* CHANGED: From Red Gradient to Indigo Gradient */
-            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); 
+            /* Dual Indigo Gradient - Bright to Dark */
+            background: linear-gradient(135deg, #6366f1 0%, #312e81 100%); 
             color: white;
             border: none;
             border-radius: 8px;
@@ -220,8 +220,8 @@
         }
 
         .btn:hover {
-            /* CHANGED: From Darker Red Gradient to Darker Indigo Gradient */
-            background: linear-gradient(135deg, #3730a3 0%, #312e81 100%); 
+            /* Dual Indigo - Darker shades on hover */
+            background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%); 
             transform: translateY(-1px);
         }
 
@@ -267,7 +267,7 @@
         }
 
         .toggle-switch.active {
-            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+            background: linear-gradient(135deg, #312e81 0%, #6366f1 100%);
         }
 
         .toggle-switch-slider {
@@ -302,11 +302,11 @@
         }
 
         .error {
-            background: #eef2ff; /* CHANGED: From Red to Light Blue */
-            color: #4f46e5; /* CHANGED: From Red to Indigo */
+            background: #eef2ff; /* Light Indigo Background */
+            color: #6366f1; /* Bright Indigo Text */
             padding: 15px;
             border-radius: 8px;
-            border-left: 4px solid #4f46e5; /* CHANGED: From Red to Indigo */
+            border-left: 4px solid #6366f1; /* CHANGED: From Red to Indigo */
             margin: 10px 0;
             font-size: 0.9rem;
         }
@@ -502,7 +502,7 @@ cursor:pointer;
         .chart-box h3 {
             font-size: 1rem;
             /* CHANGED: From Dark Maroon to Dark Indigo */
-            color: #3730a3;
+            color: #312e81;
             margin-bottom: 10px;
             padding-bottom: 5px;
             border-bottom: 1px solid #e2e8f0;
@@ -595,7 +595,7 @@ animation:scaleIn .2s ease;
 }
 
 .modal-header{
-background:linear-gradient(135deg,#4f46e5,#3730a3);
+background:linear-gradient(135deg, #312e81 0%, #6366f1 100%);
 color:white;
 padding:14px 20px;
 font-weight:600;
@@ -675,7 +675,7 @@ background:white;
 border-radius:14px;
 padding:16px 18px;
 box-shadow:0 10px 25px rgba(0,0,0,.08);
-border-left:6px solid #4f46e5;
+border-left:6px solid #6366f1;
 transition:.2s ease;
 }
 
@@ -725,7 +725,7 @@ color:#1e293b;
 
         <div id="srSearch" class="tab-content active">
             <form class="search-form" id="searchForm">
-                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">Individual SR Search</h3>
+                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #312e81;">Individual SR Search</h3>
                 <div class="form-group" style="display: none;">
                     <label for="sheetId">Google Sheet ID:</label>
                     <input type="text" id="sheetId" placeholder="Enter Google Sheet ID" value="1xJ2Ff_-FiT7WPlazXD-lp9c7i3h_2y4rTZIh4keYeH4" required>
@@ -742,7 +742,7 @@ color:#1e293b;
 
         <div id="dateStockist" class="tab-content">
             <form class="search-form" id="dateStockistForm">
-                 <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">Date / Stockist Report (Dates Optional)</h3>
+                 <h3 style="font-size: 1rem; margin-bottom: 5px; color: #312e81;">Date / Stockist Report (Dates Optional)</h3>
                 <div class="form-group">
                     <label for="fromDate">From Date (R.GEN DATE):</label>
                     <input type="date" id="fromDate">
@@ -765,7 +765,7 @@ color:#1e293b;
 
         <div id="productAnalysis" class="tab-content">
             <form class="search-form" id="productForm">
-                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">Product Analysis Report</h3>
+                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #312e81;">Product Analysis Report</h3>
                 <div class="form-group">
                     <label for="productSelect">Product Name:</label>
                     <select id="productSelect">
@@ -793,7 +793,7 @@ color:#1e293b;
 
         <div id="expiryQuality" class="tab-content">
             <form class="search-form" id="expiryForm">
-                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">Expiry/Quality Report</h3>
+                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #312e81;">Expiry/Quality Report</h3>
                 <div class="form-group">
                     <label for="expiryBeforeDate">EXPIRY - MM/YYYY</label>
                     <input type="month" id="expiryBeforeDate" required>
@@ -824,7 +824,7 @@ color:#1e293b;
 
         <div id="graphicalReports" class="tab-content">
             <form class="search-form" id="chartReportForm">
-                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">Product & Stockist Graphical Report (Dates Optional)</h3>
+                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #312e81;">Product & Stockist Graphical Report (Dates Optional)</h3>
                  <div class="form-group">
                     <label for="chartFromDate">From Date (R.GEN DATE):</label>
                     <input type="date" id="chartFromDate">
@@ -852,7 +852,7 @@ color:#1e293b;
 
         <div id="aiAnalysis" class="tab-content">
             <form class="search-form" id="aiAnalysisForm">
-                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #3730a3;">AI & Trend Analysis Report (Dates Optional)</h3>
+                <h3 style="font-size: 1rem; margin-bottom: 5px; color: #312e81;">AI & Trend Analysis Report (Dates Optional)</h3>
                  <div class="form-group">
                     <label for="aiFromDate">From Date (R.GEN DATE):</label>
                     <input type="date" id="aiFromDate">
@@ -876,7 +876,7 @@ color:#1e293b;
 <div id="printDoc" class="tab-content">
 <form class="search-form" id="printForm">
 
-<h3 style="font-size:1rem;color:#3730a3;">Print Document</h3>
+<h3 style="font-size:1rem;color:#312e81;">Print Document</h3>
 
 <div class="form-group">
 <label>From Date (R.GEN DATE)</label>
@@ -1361,7 +1361,7 @@ const body=Object.entries(map).map(([k,v])=>`
 return `
 <div style="padding:10px">
 
-<h2 style="color:#3730a3;margin-bottom:6px">
+<h2 style="color:#312e81;margin-bottom:6px">
 Product: ${title}
 </h2>
 
@@ -1414,7 +1414,7 @@ return `
 return `
 <div style="padding:10px">
 
-<h2 style="color:#3730a3;margin-bottom:6px">
+<h2 style="color:#312e81;margin-bottom:6px">
 Stockist: ${title}
 </h2>
 
@@ -1473,7 +1473,7 @@ totalVal+=val;
 
 showPopup(`
 <div style="margin-bottom: 20px;">
-    <h2 style="color:#3730a3;margin-bottom:15px;font-size:1.3rem">Product: ${productName}</h2>
+    <h2 style="color:#312e81;margin-bottom:15px;font-size:1.3rem">Product: ${productName}</h2>
     
     <div style="display:flex;gap:20px;margin-bottom:20px;font-size:0.95rem">
         <div>
@@ -1553,7 +1553,7 @@ return `
 
 showPopup(`
 <div style="margin-bottom: 20px;">
-    <h2 style="color:#3730a3;margin-bottom:15px;font-size:1.3rem">${title}</h2>
+    <h2 style="color:#312e81;margin-bottom:15px;font-size:1.3rem">${title}</h2>
     
     <div style="display:flex;gap:20px;margin-bottom:20px;font-size:0.95rem">
         <div>
@@ -1725,7 +1725,7 @@ return `
 <div class="subtitle">CUSTOMER SALES RETURN DETAILS</div>
 </div>
 
-<div style="font-size:14px;font-weight:600;color:#3730a3">
+<div style="font-size:14px;font-weight:600;color:#312e81">
 REF: ${r['SR Ref No.']}
 </div>
 </div>
@@ -1814,7 +1814,7 @@ color:#000;
 display:flex;
 align-items:center;
 justify-content:space-between;
-border-bottom:3px solid #4f46e5;
+border-bottom:3px solid #6366f1;
 padding-bottom:10px;
 margin-bottom:12px;
 }
@@ -1831,7 +1831,7 @@ flex:1;
 .title{
 font-size:22px;
 font-weight:700;
-color:#3730a3;
+color:#312e81;
 }
 
 .subtitle{
@@ -1862,7 +1862,7 @@ font-size:12px;
 }
 
 .product-table th{
-background:#4f46e5;
+background:#6366f1;
 color:white;
 border:1px solid #000;
 padding:7px;
@@ -1891,7 +1891,7 @@ padding:10px;
 .total-row td:nth-child(10){
 font-size:18px;
 font-weight:900;
-color:#3730a3;
+color:#312e81;
 }
 
 /* FOOTER */
@@ -1999,7 +1999,7 @@ return `
             exportBtn.style.display = 'block';
 
             let tableHtml = `
-                <h2 style="font-size: 1.2rem; color: #3730a3; padding: 10px 0; border-bottom: 2px solid #e5e7eb; margin-bottom: 15px;">${title} (${data.length} Records)</h2>
+                <h2 style="font-size: 1.2rem; color: #312e81; padding: 10px 0; border-bottom: 2px solid #e5e7eb; margin-bottom: 15px;">${title} (${data.length} Records)</h2>
                 <div class="product-table-container">
                     <table class="product-table" style="min-width: 100%;">
                         <thead>
@@ -2271,7 +2271,7 @@ document.getElementById('exportExpiryBtn').style.display='block';
                         <div class="result-card" id="card-${srRef}">
                             <div class="result-header" style="flex-wrap: wrap; justify-content: space-between; align-items: flex-start;">
                                 <div style="flex-basis: 70%;">
-                                    <div class="sr-ref" style="font-size: 1.2rem; font-weight: 700; color: #3730a3; line-height: 1.2;">
+                                    <div class="sr-ref" style="font-size: 1.2rem; font-weight: 700; color: #312e81; line-height: 1.2;">
                                         ${first['STOCKIST NAME'] || 'N/A'}
                                     </div>
                                     <div style="font-size:0.9rem; font-weight: 500; color:#374151; margin-top: 2px;">
@@ -2375,7 +2375,7 @@ return true;
 
                 // Report Headers
                 const headers = ['SR Ref No.', 'R.GEN DATE', 'STOCKIST NAME', 'BATCH', 'EXPIRY', 'QTY', 'TOTAL'];
-                // CONSOLIDATE BY STOCKIST
+                // CONSOLIDATE BY PRODUCT or STOCKIST based on selection
 const map={};
 
 filtered.forEach(r=>{
@@ -2460,8 +2460,11 @@ const sortToggleHtml = `
 </div>
 `;
 
+// Determine column header based on product selection
+const columnHeader = product==="ALL" ? "Product" : "Stockist";
+
 let html=`
-<h2 style="margin-bottom:12px;color:#3730a3">
+<h2 style="margin-bottom:12px;color:#312e81">
 Product Analysis — ${product==="ALL" ? "All Products" : product}
 </h2>
 
@@ -2472,7 +2475,7 @@ ${sortToggleHtml}
 <table class="product-table" id="productAnalysisTable">
 <thead>
 <tr>
-<th>Stockist</th>
+<th>${columnHeader}</th>
 <th>No. of Times</th>
 <th>QTY</th>
 <th>Value</th>
@@ -2634,7 +2637,7 @@ const expirySortToggleHtml = `
 `;
 
 let html=`
-<h2 style="margin-bottom:12px;color:#3730a3">
+<h2 style="margin-bottom:12px;color:#312e81">
 Expiry / Quality Report
 </h2>
 
@@ -2808,8 +2811,8 @@ generateChartReport(filtered, product, stockist);
                         label: 'Returned Quantity',
                         data: productQuantities,
                         // CHANGED: From Dark Red to Dark Indigo
-                        backgroundColor: '#3730a3',
-                        borderColor: '#3730a3',
+                        backgroundColor: '#312e81',
+                        borderColor: '#312e81',
                         borderWidth: 1
                     }]
                 },
@@ -2985,7 +2988,7 @@ const stateBreakdown = Object.entries(stateValueMap)
             }
 
             let dashboardHtml = `
-                <h2 style="font-size: 1.5rem; color: #3730a3; padding: 10px 0; border-bottom: 2px solid #4f46e5; margin-bottom: 20px;">
+                <h2 style="font-size: 1.5rem; color: #312e81; padding: 10px 0; border-bottom: 2px solid #6366f1; margin-bottom: 20px;">
                     AI & Trend Analysis (${dateRangeText})
                 </h2>
                 
@@ -2994,9 +2997,9 @@ const stateBreakdown = Object.entries(stateValueMap)
                     <div class="chart-box" style="flex-grow: 0; min-width: 100%;">
                         <h3>Return Key Performance Indicators (KPIs)</h3>
                         <div class="section-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                            <div class="field" style="background: #eef2ff; border-color: #4f46e5;">
-                                <div class="field-label" style="color: #3730a3;">Total Return Value</div>
-                                <div class="field-value" style="font-size: 1.8rem; font-weight: 700; color: #3730a3;">₹${totalReturnsValue.toFixed(2)}</div>
+                            <div class="field" style="background: #eef2ff; border-color: #6366f1;">
+                                <div class="field-label" style="color: #312e81;">Total Return Value</div>
+                                <div class="field-value" style="font-size: 1.8rem; font-weight: 700; color: #312e81;">₹${totalReturnsValue.toFixed(2)}</div>
                             </div>
                             <div class="field" style="background: #fff7ed; border-color: #f59e0b;">
                                 <div class="field-label" style="color: #f59e0b;">Total Products Qty Returned</div>
@@ -3106,8 +3109,8 @@ const stateBreakdown = Object.entries(stateValueMap)
                         label: 'Return Value (₹)',
                         data: monthlyValues,
                         // Dynamic styling based on type (MODIFIED) - Changed from Red to Indigo
-                        backgroundColor: chartType === 'bar' ? '#4f46e5' : 'rgba(79, 70, 229, 0.5)', 
-                        borderColor: '#3730a3', 
+                        backgroundColor: chartType === 'bar' ? '#6366f1' : 'rgba(79, 70, 229, 0.5)', 
+                        borderColor: '#312e81', 
                         borderWidth: chartType === 'line' ? 3 : 1, 
                         fill: chartType === 'line' ? false : true,
                         tension: chartType === 'line' ? 0.4 : 0, 
@@ -3214,7 +3217,7 @@ document.getElementById('printStockist')
                 // Change the stockist name color back to dark indigo when collapsed
                 const srRefDiv = document.getElementById('card-' + srRef).querySelector('.sr-ref');
                  if (srRefDiv) {
-                     srRefDiv.style.color = '#3730a3'; // Dark Indigo
+                     srRefDiv.style.color = '#312e81'; // Dark Indigo
                  }
             }
         }
@@ -3289,7 +3292,7 @@ return `
 }).join("");
 
 const html=`
-<h2 style="color:#3730a3;margin-bottom:5px">
+<h2 style="color:#312e81;margin-bottom:5px">
 Product : ${title}
 </h2>
 
@@ -3354,7 +3357,7 @@ modal.innerHTML=`
 <button onclick="exportPopupTable(document.getElementById('modalTitle').innerText)"
 style="
 background:white;
-color:#3730a3;
+color:#312e81;
 border:none;
 padding:5px 12px;
 border-radius:6px;
