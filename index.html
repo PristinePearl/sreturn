@@ -9,484 +9,578 @@
         type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
-    /* 1. MODERNIZED BASE STYLES */
-    :root{
-      font-family:'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; /* Changed font */
-      --primary-color: #007BFF; /* A vibrant blue */
-      --primary-dark: #0056b3;
-      --secondary-color: #217346; /* Download green */
-      --upload-color: #FF8904; /* Upload orange */
-      --background-color: #eef2f6; /* Lighter, cooler background */
-      --card-bg: #ffffff;
-      --text-color: #2c3e50;
-      --light-gray: #bdc3c7;
-      --medium-gray: #7f8c8d;
-      --border-color: #dfe6e9;
-      --error-color: #dc3545;
-    }
-    body{
-      padding: 30px 15px; /* Increased padding */
-      background: var(--background-color);
-      color: var(--text-color);
-      line-height: 1.6;
-  
-  }
-    
-    /* 2. CARD STYLING */
-    .card{
-  background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  padding: 30px;
-  max-width: 1500px;   /* widened */
-  width: 95%;          /* responsive width */
-  margin: 0 auto;
-}
-    
-    /* 3. HEADINGS & LABELS */
-    h1{
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--primary-dark);
-      margin: 0 0 20px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid var(--border-color); /* Subtle separator */
-    }
-    label{
-      display: block;
-      font-size: 13px;
-      color: var(--medium-gray);
-      font-weight: 500;
-      margin-bottom: 4px;
-      text-transform: uppercase; /* Clearer labels */
-    }
-    
-    /* 4. FORM INPUTS & SELECTS */
-    .grid{
-      display: grid;
-      grid-template-columns: repeat(4,1fr); /* Changed to 4 columns for better field grouping */
-      gap: 20px; /* Increased gap */
-      margin-bottom: 20px;
-    }
-    /* Adjusted grid for mobile (optional but good practice) */
-    @media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:600px){.grid{grid-template-columns:1fr}}
-
-    input[type=text], input[type=date], input[type=number], select, textarea{
-      width: 100%;
-      padding: 10px 12px; /* Slightly more padding */
-      border-radius: 8px; /* Softer corners */
-      border: 1px solid var(--border-color);
-      box-sizing: border-box;
-      font-size: 14px;
-      color: var(--text-color);
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1); /* Subtle focus ring */
-      outline: none;
-    }
-    select:disabled, input:read-only {
-      background-color: #f8f9fa;
-      cursor: default;
-      color: var(--medium-gray);
-    }
-    textarea{resize:vertical;min-height:60px;}
-    .full{grid-column:span 4} /* Updated span for 4-column grid */
-    @media(max-width:1000px){.full{grid-column:span 2}}
-    @media(max-width:600px){.full{grid-column:span 1}}
-    
-    /* 5. TABLE STYLING */
-    table{
-      width: 100%;
-      border-collapse: separate; /* Changed to separate for rounded cell corners */
-      border-spacing: 0;
-      margin-top: 15px;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      overflow: hidden; /* Ensures table content respects border-radius */
-    }
-    th,td{
-      padding: 10px 8px;
-      border: 0; /* Removing individual cell borders to rely on row borders/spacing */
-      text-align: left;
-      border-bottom: 1px solid var(--border-color); /* Light row separator */
-    }
-    th{
-      background: #e9ecef; /* Light header background */
-      color: var(--text-color);
-      font-weight: 500;
-      font-size: 14px;
-      text-transform: uppercase;
-      white-space: nowrap; /* PREVENTS HEADER TEXT FROM WRAPPING */
-    }
-    /* Remove bottom border on last row of the table body */
-    #itemsTable tbody tr:last-child td {
-        border-bottom: none;
+    /* ── TOKENS ── */
+    :root {
+      font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+      --primary:       #0056b3;
+      --primary-light: #007BFF;
+      --green:         #217346;
+      --orange:        #FF8904;
+      --red:           #dc3545;
+      --bg:            #eef2f7;
+      --card:          #ffffff;
+      --text:          #1e2a38;
+      --muted:         #6c7a8d;
+      --border:        #dde3ea;
+      --section-bg:    #f4f7fb;
+      --section-hd:    #e8edf4;
     }
 
-    /* 6. TABLE INPUTS */
-    .item-row input, .item-row select, .item-row textarea {
-      padding: 6px 8px; /* Slightly more space */
-      font-size: 13px; /* Slightly smaller font */
-      border-radius: 6px;
-      min-height: auto;
+    /* ── BASE ── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px 80px;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
     }
-    .item-row input[readonly] { /* Style for calculated fields */
-        font-weight: bold;
-        background-color: #f8f9fa;
-        border: none;
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.09);
+      padding: 0;
+      max-width: 1540px;
+      width: 98%;
+      margin: 0 auto;
+      overflow: hidden;
     }
-    .item-row textarea {
-      min-height: 35px; /* Adjusting min-height to fit better */
-      padding: 6px 8px;
-    }
-    /* ADJUSTED COLUMN ALIGNMENT AFTER REMOVING 'NATURE' */
-    .item-row td:nth-child(1), .item-row td:nth-child(5) {
-        text-align: center;
-    }
-    .item-row td:nth-child(6), .item-row td:nth-child(7), .item-row td:nth-child(8), .item-row td:nth-child(9), .item-row td:nth-child(10) {
-        text-align: right;
-    }
-    
-    /* 7. BUTTONS & ACTIONS */
-    .actions{
+
+    /* ── PAGE HEADER ── */
+    .page-header {
       display: flex;
-      gap: 12px; /* Increased gap */
       align-items: center;
-      margin-top: 15px;
-    }
-    button{
-      padding: 10px 18px; /* More substantial buttons */
-      border-radius: 8px;
-      border: 0;
-      background: var(--primary-color);
+      gap: 16px;
+      padding: 20px 28px 16px;
+      border-bottom: 2px solid var(--border);
+      background: linear-gradient(135deg, #0056b3 0%, #003d82 100%);
       color: #fff;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
-      box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
     }
-    button:hover{
-      background: var(--primary-dark);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 8px rgba(0, 123, 255, 0.3);
+    .page-header img {
+      height: 48px;
+      width: auto;
+      border-radius: 6px;
+      background: #fff;
+      padding: 4px;
+      flex-shrink: 0;
     }
-    button.ghost{
-      background: var(--card-bg);
-      color: var(--medium-gray);
-      border: 1px solid var(--border-color);
-      box-shadow: none;
+    .page-header-text h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: .4px;
+      color: #fff;
+      border: none;
+      padding: 0;
     }
-    button.ghost:hover{
-      background: #f8f9fa;
-      color: var(--text-color);
-      transform: none;
-      box-shadow: none;
-    }
-    .right{text-align:right}
-    .small{font-size:13px;padding:8px 12px}
-    .remove{
-      background: var(--error-color);
-      box-shadow: 0 4px 6px rgba(220, 53, 69, 0.2);
-    }
-    .remove:hover{
-      background: #c82333;
-      box-shadow: 0 6px 8px rgba(220, 53, 69, 0.3);
-      transform: translateY(-1px);
+    .page-header-text p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      opacity: .8;
+      letter-spacing: .5px;
+      text-transform: uppercase;
     }
 
-    /* SPECIFIC BUTTON COLORS */
-    #generate { 
-        background: #607346 !important; /* PREVIEW: Earthy Green */
-        box-shadow: 0 4px 6px rgba(96, 115, 70, 0.2) !important;
-    }
-    #generate:hover { 
-        background: #4b5c37 !important;
-        box-shadow: 0 6px 8px rgba(96, 115, 70, 0.3) !important;
-    }
-    #submitToSheet { 
-        background: var(--upload-color) !important; /* UPLOAD: Vibrant Orange */
-        box-shadow: 0 4px 6px rgba(255, 137, 4, 0.2) !important;
-    }
-    #submitToSheet:hover { 
-        background: #e67a00 !important;
-        box-shadow: 0 6px 8px rgba(255, 137, 4, 0.3) !important;
-    }
-    #downloadXlsx { 
-        background: var(--secondary-color) !important; /* DOWNLOAD: Dark Green */
-        box-shadow: 0 4px 6px rgba(33, 115, 70, 0.2) !important;
-    }
-    #downloadXlsx:hover { 
-        background: #1a5c37 !important;
-        box-shadow: 0 6px 8px rgba(33, 115, 70, 0.3) !important;
-    }
-    #sendMail { 
-        background: var(--primary-color) !important; /* SEND MAIL: Primary Blue */
-    }
+    /* ── FORM CONTENT WRAPPER ── */
+    .form-body { padding: 24px 28px; }
 
-    /* 8. RESULT/PREVIEW AREA */
-    .result{
-      margin-top: 25px;
-      padding: 20px;
-      background: #fcfcfd; /* Very light background for contrast */
+    /* ── SECTION GROUPS ── */
+    .section-group {
+      background: var(--section-bg);
+      border: 1px solid var(--border);
       border-radius: 10px;
-      border: 2px dashed #d6eaff; /* Light blue dashed border */
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05); /* Inner shadow for depth */
-      color: var(--text-color);
+      margin-bottom: 20px;
+      overflow: hidden;
     }
-    
-    /* 9. STATUS MESSAGE */
-    .status-message {
-      font-weight: 500;
-      color: var(--upload-color); /* Matches the upload button theme */
-      margin-left: 15px;
-      font-size: 15px;
+    .section-group-header {
+      background: var(--section-hd);
+      padding: 8px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--primary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-group-header .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--primary-light);
       display: inline-block;
     }
-    
-    /* 10. TOTAL VALUE DISPLAY */
-    .total-value-container {
-        margin-top: 15px;
-        padding: 10px 15px;
-        background: #fff3cd; /* Light warning color for emphasis */
-        border: 1px solid #ffeeba;
-        border-radius: 8px;
-        display: inline-block;
+    .section-group-body {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 16px;
     }
-    strong#totalValueDisplay {
-        font-size: 18px;
-        color: #856404; /* Darker text for readability */
-        font-weight: 700;
+    @media(max-width:1000px){ .section-group-body { grid-template-columns: repeat(2,1fr); } }
+    @media(max-width:600px){  .section-group-body { grid-template-columns: 1fr; } }
+
+    /* ── LABELS & INPUTS ── */
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    input[type=text], input[type=date], input[type=number], select, textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 7px;
+      border: 1.5px solid var(--border);
+      font-size: 13.5px;
+      color: var(--text);
+      background: #fff;
+      transition: border-color .18s, box-shadow .18s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(0,123,255,.12);
+      outline: none;
+    }
+    select:disabled, input[readonly] {
+      background: #f0f3f7;
+      color: var(--muted);
+      cursor: default;
+    }
+    textarea { resize: vertical; min-height: 60px; }
+
+    /* ── SR REF BADGE ── */
+    .sr-ref-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #0056b3, #007BFF);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      margin-top: 2px;
+      box-shadow: 0 3px 8px rgba(0,86,179,.25);
+      width: 100%;
+      text-align: center;
     }
 
-    /* 11. PRINT STYLES */
+    /* ── PRODUCT TABLE SECTION ── */
+    .table-section {
+      background: var(--section-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .table-section-header {
+      background: var(--section-hd);
+      padding: 8px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--primary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .table-scroll-wrap {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 900px;
+    }
+    th {
+      background: linear-gradient(135deg, #0056b3 0%, #003d82 100%);
+      color: #fff;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      padding: 11px 8px;
+      white-space: nowrap;
+      border-bottom: 2px solid #003270;
+      position: sticky;
+      top: 0;
+    }
+    td {
+      padding: 8px 7px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      vertical-align: middle;
+    }
+    #itemsTable tbody tr:last-child td { border-bottom: none; }
+    #itemsTable tbody tr:nth-child(even) td { background: #f7f9fc; }
+    #itemsTable tbody tr:hover td { background: #eef4ff; transition: background .15s; }
+
+    /* ── TABLE INPUTS ── */
+    .item-row input, .item-row select {
+      padding: 5px 7px;
+      font-size: 12.5px;
+      border-radius: 5px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+    }
+    .item-row input[readonly] {
+      font-weight: 700;
+      background: #eef2f7;
+      border: none;
+      color: var(--text);
+    }
+    .item-row td:nth-child(1) { text-align: center; font-weight: 600; color: var(--muted); }
+    .item-row td:nth-child(5),
+    .item-row td:nth-child(6) { text-align: center; }
+    .item-row td:nth-child(7),
+    .item-row td:nth-child(8),
+    .item-row td:nth-child(9),
+    .item-row td:nth-child(10),
+    .item-row td:nth-child(11) { text-align: right; }
+
+    /* ── STATUS BADGES ── */
+    .status-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .4px;
+      white-space: nowrap;
+    }
+    .status-badge.expired      { background: #fde8ea; color: #b91c2a; border: 1px solid #f5c2c7; }
+    .status-badge.short-expiry { background: #fff3cd; color: #854d0e; border: 1px solid #fde68a; }
+    .status-badge.long-expiry  { background: #d1fae5; color: #065f3a; border: 1px solid #6ee7b7; }
+    .status-badge.empty        { background: #f1f5f9; color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── TABLE ACTIONS ROW ── */
+    .table-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--section-bg);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── TOTAL BAR ── */
+    .total-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #fff8e1, #fffde7);
+      border: 1.5px solid #f9c74f;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .total-bar .total-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .total-bar .total-amount {
+      font-size: 26px;
+      font-weight: 900;
+      color: #92400e;
+      letter-spacing: 1px;
+    }
+    .total-bar .total-currency {
+      font-size: 13px;
+      font-weight: 600;
+      color: #b45309;
+      margin-right: -4px;
+    }
+
+    /* ── STICKY BOTTOM ACTION BAR ── */
+    .bottom-action-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #fff;
+      border-top: 2px solid var(--border);
+      box-shadow: 0 -4px 16px rgba(0,0,0,.1);
+      padding: 12px 28px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: flex-end;
+      z-index: 100;
+    }
+
+    /* ── BUTTONS ── */
+    button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 0;
+      background: var(--primary-light);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: .3px;
+      transition: background .18s, transform .1s, box-shadow .18s;
+      box-shadow: 0 3px 6px rgba(0,123,255,.2);
+      white-space: nowrap;
+    }
+    button:hover {
+      background: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 5px 10px rgba(0,86,179,.28);
+    }
+    button:active { transform: translateY(0); }
+    button.ghost {
+      background: #fff;
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+      box-shadow: none;
+    }
+    button.ghost:hover { background: var(--section-hd); color: var(--text); transform: none; box-shadow: none; }
+    .small { font-size: 12px; padding: 8px 14px; }
+    .remove {
+      background: var(--red);
+      box-shadow: 0 3px 6px rgba(220,53,69,.2);
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    .remove:hover { background: #b91c2a; }
+
+    #submitToSheet  { background: var(--orange) !important; box-shadow: 0 3px 8px rgba(255,137,4,.25) !important; }
+    #submitToSheet:hover { background: #d97200 !important; }
+    #downloadXlsx  { background: var(--green) !important; box-shadow: 0 3px 8px rgba(33,115,70,.25) !important; }
+    #downloadXlsx:hover { background: #185a35 !important; }
+    #generate      { background: #607346 !important; }
+    #generate:hover{ background: #4b5c37 !important; }
+    #sendMail      { background: var(--primary-light) !important; }
+    #viewReport    { background: #6c42c4 !important; box-shadow: 0 3px 8px rgba(108,66,196,.25) !important; }
+    #viewReport:hover { background: #5533a0 !important; }
+    #addRow        { background: var(--green); box-shadow: 0 3px 8px rgba(33,115,70,.2); }
+    #addRow:hover  { background: #185a35; }
+
+    /* ── STATUS MESSAGE ── */
+    .status-message {
+      font-weight: 600;
+      color: var(--orange);
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── LOADING SPINNER ── */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary-light);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── PRINT ── */
     @media print {
       body * { visibility: hidden; }
       #printArea, #printArea * { visibility: visible; }
-      #printArea { 
-        position: absolute; 
-        top: 0; 
-        left: 0; 
-        width: 100%; 
-        padding: 10px;
-      }
-      .card { box-shadow: none; border-radius: 0; padding: 0; }
-      /* Reset preview/print-specific styles */
-      #printArea h2 { font-size: 18px; }
-      #printContent p { font-size: 11px !important; }
-      #printContent table { border-radius: 0; border: 1px solid #333; font-size: 10px !important; }
-      #printContent th, #printContent td { padding: 4px; border-color: #333; }
-      #printContent th { background: #eee; }
+      #printArea { position: absolute; top:0; left:0; width:100%; padding:10px; }
+      .card { box-shadow:none; border-radius:0; padding:0; }
+      #printContent p { font-size:11px !important; }
+      #printContent table { border-radius:0; border:1px solid #333; font-size:10px !important; }
+      #printContent th, #printContent td { padding:4px; border-color:#333; }
+      #printContent th { background:#eee !important; color:#000 !important; }
+      .bottom-action-bar { display: none; }
     }
 
-    /* 12. NEW, IMPROVED PREVIEW/REPORT STYLES */
-    
-    /* --- Main Company Header (New) --- */
+    /* ── REPORT / PREVIEW STYLES ── */
+    .result {
+      margin-top: 25px;
+      padding: 20px;
+      background: #fcfcfd;
+      border-radius: 10px;
+      border: 2px dashed #c7deff;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.04);
+    }
     .report-company-name {
-        text-align: center;
-        font-weight: 700;
-        font-size: 26px; /* Larger company name */
-        color: #000; /* Black for strong header */
-        margin-bottom: 5px;
-        text-transform: uppercase;
+      text-align:center; font-weight:700; font-size:26px; color:#000;
+      margin-bottom:5px; text-transform:uppercase;
     }
-    
-    /* --- Report Title (Modified per user request: Large and Bold) --- */
     .report-title {
-        text-align: center;
-        font-weight: 900; /* Extra bold */
-        font-size: 28px; /* Much larger */
-        color: var(--primary-dark);
-        margin: 0 0 20px 0; /* More space below */
-        padding-bottom: 5px;
-        border-bottom: 1px solid #ddd;
-        text-transform: uppercase;
+      text-align:center; font-weight:900; font-size:26px; color:var(--primary);
+      margin:0 0 18px; padding-bottom:5px; border-bottom:1px solid #ddd; text-transform:uppercase;
     }
-    
-    /* --- Report Metadata (Modified) --- */
     .report-header {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr); /* Changed to 3 columns for density */
-        gap: 10px;
-        padding: 10px;
-        margin-bottom: 20px;
-        background: #f8f9fa; /* Light background for the info block */
-        border-radius: 8px;
-        border: 1px solid #eee;
+      display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+      padding:12px; margin-bottom:20px; background:#f8f9fa;
+      border-radius:8px; border:1px solid #eee;
     }
-    .report-meta-item {
-        font-size: 13px;
-        padding: 0;
-        line-height: 1.2;
-    }
+    .report-meta-item { font-size:13px; line-height:1.2; }
     .report-meta-item strong {
-        color: var(--medium-gray);
-        font-weight: 500;
-        display: block; /* Strong label above value */
-        text-transform: uppercase;
-        font-size: 11px;
-        margin-bottom: 2px;
+      color:var(--muted); font-weight:600; display:block;
+      text-transform:uppercase; font-size:10px; margin-bottom:2px;
     }
-    
-    /* --- Report Table (Modified) --- */
     .report-table {
-        margin-top: 10px;
-        border: 1px solid var(--border-color) !important;
-        border-collapse: collapse !important;
-        border-radius: 8px;
-        overflow: hidden;
+      margin-top:10px; border:1px solid var(--border) !important;
+      border-collapse:collapse !important; border-radius:8px; overflow:hidden;
     }
-    .report-table th, .report-table td {
-        padding: 8px 10px;
-        font-size: 12px; /* Slightly larger font */
-        border: 1px solid #eee; /* Clear cell borders */
-    }
-    .report-table th {
-        background: var(--primary-dark);
-        color: white; /* Darker header with white text */
-        font-weight: 500;
-        text-transform: uppercase;
-    }
-    .report-table tr:nth-child(even) {
-        background-color: #fcfcfc; /* Zebra striping for readability */
-    }
-    .report-table tr:hover {
-        background-color: #f0f8ff;
-    }
-
-    /* --- Report Totals (Modified) --- */
+    .report-table th, .report-table td { padding:8px 10px; font-size:12px; border:1px solid #eee; }
+    .report-table th { background:var(--primary); color:#fff; font-weight:600; text-transform:uppercase; }
+    .report-table tr:nth-child(even) { background-color:#f7f9fc; }
+    .report-table tr:hover { background-color:#eef4ff; }
     .report-footer-total {
-        text-align: right;
-        font-size: 18px;
-        font-weight: 700;
-        padding: 15px 20px;
-        margin-top: 20px;
-        background: #e6f7ff; /* Light blue background for emphasis */
-        border-top: 3px solid var(--primary-color);
-        border-radius: 0 0 8px 8px; /* Rounded bottom corners */
+      text-align:right; font-size:17px; font-weight:700;
+      padding:14px 20px; margin-top:18px;
+      background:#eef4ff; border-top:3px solid var(--primary-light);
+      border-radius:0 0 8px 8px;
     }
-    .report-footer-total span {
-        color: var(--primary-dark);
-        font-size: 24px; /* Grand Total is very prominent */
-        margin-left: 15px;
-    }
+    .report-footer-total span { color:var(--primary); font-size:22px; margin-left:12px; }
   </style>
 
 </head>
 <body>
   <div class="card">
-    <h1>PRISTINE PEARL PHARMA PVT LTD</h1>
-    <div class="grid">
-      <div>
-        <label for="date">C.INV DATE</label>
-        <input id="date" type="date">
-      </div>
-      <div>
-        <label for="cInvNo">C.INV NO.</label>
-        <input id="cInvNo" type="text" placeholder="Customer Inv. No." oninput="this.value = this.value.toUpperCase()">
-      </div>
-      <div>
-        <label for="stockist">STOCKIST NAME</label>
 
-<input 
-  type="text"
-  id="stockistSearch"
-  placeholder="Type to search stockist..."
-  style="margin-bottom:6px"
-/>
-
-<select id="stockist">
-        <option value="">-- Loading stockists... --</option>
-        </select>
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <img src="https://www.pristinepearlpharma.in/images/alt-logo.png" alt="Logo">
+      <div class="page-header-text">
+        <h1>Pristine Pearl Pharma Pvt Ltd</h1>
+        <p>Sales Return Manager</p>
       </div>
-      <div>
-        <label for="stockistCode">STOCKIST CODE</label>
-        <input id="stockistCode" type="text" readonly>
-      </div>
-      <div>
-        <label for="area">AREA</label>
-        <input id="area" type="text" readonly>
-      </div>
-      <div>
-        <label for="team">STATE</label>
-        <input id="team" type="text" readonly>
-      </div>
-      
-      <div> 
-        <label for="noOfBoxes">NO. OF BOXES</label>
-        <input id="noOfBoxes" type="number" min="0" placeholder="Enter approx no. of boxes returned">
-      </div>
-      
-      <div>
-        <label for="returnNature">NATURE</label>
-        <select id="returnNature" disabled>
-          <option value="Sales Return">Sales Return</option>
-        </select>
-      </div>
-<div>
-      <label>SR REF NO.</label>
-      <input type="text" name="memberID" id="memberID" readonly="">
-</div>
-<div>
-  <label>COURIER NAME</label>
-  <input type="text" id="courierName"
-         style="text-transform:uppercase;"
-         oninput="this.value=this.value.replace(/[^A-Z ]/gi,'').toUpperCase();">
-</div>
-
-<div>
-  <label>POD NO.</label>
-  <input type="text" id="podNo"
-         style="text-transform:uppercase;"
-         oninput="this.value=this.value.toUpperCase();">
-</div>
-      <div class = full>
-        <label> <Strong> PRODUCT DETAILS </Strong> </label>
-        <table id="itemsTable">
-          <thead>
-            <tr>
-              <th style="width:40px">S.NO</th>
-              <th style="width:180px">PRODUCT NAME</th>
-              <th style="width:90px">BATCH</th>
-              <th style="width:80px">EXPIRY</th>
-              <th style="width:90px">QTY</th>
-<th style="width:90px">FQTY</th>
-              <th style="width:70px">RATE</th>
-              <th style="width:70px">GST %</th>
-              <th style="width:70px">GST VALUE</th>
-              <th style="width:70px">TAXABLE</th>
-              <th style="width:90px">TOTAL</th>
-              <th style="width:90px">STATUS</th>
-<th style="width:120px">REMARKS</th>
-              <th style="width:30px">ACTION</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div class="actions">
-          <button id="addRow" class="BIG"> + ADD PRODUCT </button>
-          <button id="clearRows" type="button" class="ghost small">DELETE ALL</button>
-        </div>
-      </div>
-      
-      <div class="full right">
-        <div class="total-value-container">
-            <strong>TOTAL VALUE: <span id="totalValueDisplay">0.00</span></strong>
-        </div>
-      </div>
-      
-      <div class="full right">
-        <button id="submitToSheet" class="Big"> <strong> UPLOAD </strong> </button> 
-        <span id="uploadStatus" class="status-message" style="display:none;"></span>
-        <button id="viewReport" class="Big"><strong>VIEW REPORT</strong></button>
-        <button id="generate" class="small" style="display:none;">PREVIEW REPORT</button>
-        <button id="downloadXlsx" class="Big" style="display:none;"> <strong> DOWNLOAD EXCEL </strong> </button> 
-        <button id="sendMail" class="small" style="display:none;">SEND MAIL</button> 
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+        <div class="sr-ref-badge" id="memberID" style="width:auto;min-width:130px;">—</div>
       </div>
     </div>
-    <div id="printArea"><div id="preview" class="result" hidden></div></div>
+
+    <div class="form-body">
+
+      <!-- SECTION 1: Invoice & Stockist -->
+      <div class="section-group">
+        <div class="section-group-header"><span class="dot"></span> Invoice &amp; Stockist Details</div>
+        <div class="section-group-body">
+
+          <div>
+            <label for="date">C.Inv Date</label>
+            <input id="date" type="date">
+          </div>
+          <div>
+            <label for="cInvNo">C.Inv No.</label>
+            <input id="cInvNo" type="text" placeholder="Customer Inv. No." oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <div>
+            <label for="stockist">Stockist Name</label>
+            <input type="text" id="stockistSearch" placeholder="🔍 Type to search stockist..." style="margin-bottom:5px;">
+            <select id="stockist"><option value="">-- Loading stockists... --</option></select>
+          </div>
+          <div>
+            <label for="stockistCode">Stockist Code</label>
+            <input id="stockistCode" type="text" readonly>
+          </div>
+          <div>
+            <label for="area">Area</label>
+            <input id="area" type="text" readonly>
+          </div>
+          <div>
+            <label for="team">State / Team</label>
+            <input id="team" type="text" readonly>
+          </div>
+          <div>
+            <label for="noOfBoxes">No. of Boxes</label>
+            <input id="noOfBoxes" type="number" min="0" placeholder="Approx. boxes returned">
+          </div>
+
+          <!-- hidden nature field kept for data compatibility -->
+          <div style="display:none">
+            <select id="returnNature" disabled><option value="Sales Return">Sales Return</option></select>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECTION 2: Courier Details -->
+      <div class="section-group">
+        <div class="section-group-header"><span class="dot"></span> Courier Details</div>
+        <div class="section-group-body">
+          <div>
+            <label>Courier Name</label>
+            <input type="text" id="courierName" placeholder="COURIER NAME" oninput="this.value=this.value.replace(/[^A-Z ]/gi,'').toUpperCase();">
+          </div>
+          <div>
+            <label>POD No.</label>
+            <input type="text" id="podNo" placeholder="POD / AWB NUMBER" oninput="this.value=this.value.toUpperCase();">
+          </div>
+          <!-- hidden memberID input kept for JS compatibility -->
+          <input type="hidden" name="memberID" id="memberIDHidden">
+        </div>
+      </div>
+
+      <!-- SECTION 3: Product Details Table -->
+      <div class="table-section">
+        <div class="table-section-header">
+          <span><span class="dot"></span> Product Details</span>
+          <span id="rowCountBadge" style="font-size:11px;font-weight:600;color:var(--muted);">0 items</span>
+        </div>
+        <div class="table-scroll-wrap">
+          <table id="itemsTable">
+            <thead>
+              <tr>
+                <th style="width:38px">S.No</th>
+                <th style="width:210px">Product Name</th>
+                <th style="width:90px">Batch</th>
+                <th style="width:78px">Expiry</th>
+                <th style="width:68px">Qty</th>
+                <th style="width:68px">FQty</th>
+                <th style="width:75px">Rate</th>
+                <th style="width:62px">GST %</th>
+                <th style="width:80px">GST Val</th>
+                <th style="width:80px">Taxable</th>
+                <th style="width:88px">Total</th>
+                <th style="width:100px">Status</th>
+                <th style="width:160px">Remarks</th>
+                <th style="width:36px"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button id="addRow">＋ Add Product</button>
+          <button id="clearRows" class="ghost small">🗑 Clear All</button>
+        </div>
+      </div>
+
+      <!-- TOTAL BAR -->
+      <div class="total-bar">
+        <span class="total-label">Grand Total Return Value</span>
+        <span class="total-currency">₹</span>
+        <span class="total-amount" id="totalValueDisplay">0.00</span>
+      </div>
+
+      <!-- PREVIEW AREA -->
+      <div id="printArea"><div id="preview" class="result" hidden></div></div>
+
+    </div><!-- /form-body -->
+  </div><!-- /card -->
+
+  <!-- STICKY BOTTOM ACTION BAR -->
+  <div class="bottom-action-bar">
+    <span id="uploadStatus" class="status-message" style="display:none;margin-right:auto;"></span>
+    <button id="viewReport">📋 View Report</button>
+    <button id="generate" style="display:none;">👁 Preview</button>
+    <button id="sendMail" style="display:none;">✉ Send Mail</button>
+    <button id="downloadXlsx" style="display:none;">⬇ Download Excel</button>
+    <button id="submitToSheet">⬆ Upload</button>
   </div>
   <script>
     // ** IMPORTANT: Replace this with your actual Google Apps Script Web App URL **
@@ -609,22 +703,32 @@
         input.value = '0.00';
         return input;
     }
-    const memberIDInput = document.getElementById("memberID");
+    // memberID: badge in header + hidden input for data collection
+    const memberIDBadge  = document.getElementById("memberID");
+    const memberIDHidden = document.getElementById("memberIDHidden");
+
     function getUniqueMemberID() {
       let usedIDs = JSON.parse(localStorage.getItem("usedIDs") || "[]");
       let newID;
-
       do {
         const randomNum = Math.floor(10000 + Math.random() * 90000);
         newID = "SR" + randomNum;
       } while (usedIDs.includes(newID));
-
       usedIDs.push(newID);
       localStorage.setItem("usedIDs", JSON.stringify(usedIDs));
       return newID;
     }
 
-    memberIDInput.value = getUniqueMemberID();
+    const _srID = getUniqueMemberID();
+    memberIDBadge.textContent = _srID;
+    memberIDHidden.value      = _srID;
+
+    // Row count badge
+    function updateRowCountBadge() {
+      const n = itemsTable ? itemsTable.rows.length : 0;
+      const badge = document.getElementById('rowCountBadge');
+      if (badge) badge.textContent = n + (n === 1 ? ' item' : ' items');
+    }
 
     
     // Function to format the expiry input (MM/YY) - Kept for existing functionality
@@ -820,7 +924,7 @@ remarksCell.appendChild(remarksText);
       const removeBtn = document.createElement('button');
       removeBtn.textContent = 'X';
       removeBtn.className = 'remove small';
-      removeBtn.onclick = () => { row.remove(); updateSNoAndGrandTotal(); };
+      removeBtn.onclick = () => { row.remove(); updateSNoAndGrandTotal(); updateRowCountBadge(); };
       row.insertCell(13).appendChild(removeBtn); // Index 11
 
       // Event Listeners
@@ -864,10 +968,11 @@ remarksCell.appendChild(remarksText);
     }
 
     // Event listeners for Add/Clear buttons
-    addRowBtn.addEventListener('click', newRow);
+    addRowBtn.addEventListener('click', () => { newRow(); updateRowCountBadge(); });
     clearRowsBtn.addEventListener('click', () => {
       itemsTable.innerHTML = '';
       updateGrandTotal();
+      updateRowCountBadge();
     });
 
     function collectData() {
@@ -903,7 +1008,7 @@ remarks: (function() {
         const team = document.getElementById('team').value;
         const noOfBoxes = noOfBoxesEl.value;
         const grandTotal = totalValueDisplay.textContent;
- const memberID = document.getElementById('memberID').value;
+ const memberID = document.getElementById('memberIDHidden').value || document.getElementById('memberID').textContent;
 const courierName = document.getElementById('courierName').value;
 const podNo = document.getElementById('podNo').value;
         
@@ -1164,6 +1269,7 @@ rate: r.rate,
       // FIX: Use YYYY-MM-DD format for input type="date" value
       dateEl.value = today.toISOString().split('T')[0];
       newRow();
+      updateRowCountBadge();
     });
 document.getElementById("viewReport").addEventListener("click", function () {
     window.open("report.html", "_blank");
@@ -1267,6 +1373,7 @@ window.addEventListener("load", () => {
     data.items.forEach(item => {
       newRow(item);
     });
+    updateRowCountBadge();
   }
 });
 
