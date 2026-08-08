@@ -3,1479 +3,1205 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>PRISTINE PEARL PHARMA - Sales Return Manager</title>
-  <link rel="icon" 
-        href="https://www.pristinepearlpharma.in/images/alt-logo.png" 
-        type="image/png">
+  <title>Sales Return Analytics — Pristine Pearl Pharma</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <style>
-    /* ── TOKENS ── */
     :root {
-      font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
       --primary:       #0056b3;
       --primary-light: #007BFF;
       --green:         #217346;
       --orange:        #FF8904;
       --red:           #dc3545;
+      --blue:          #0056b3;
       --bg:            #eef2f7;
       --card:          #ffffff;
       --text:          #1e2a38;
       --muted:         #6c7a8d;
       --border:        #dde3ea;
-      --section-bg:    #f4f7fb;
-      --section-hd:    #e8edf4;
     }
 
-    /* ── BASE ── */
     *, *::before, *::after { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 24px 16px 80px;
+      padding: 24px 16px 40px;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
+      font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
     }
 
-    /* ── CARD ── */
-    .card {
-      background: var(--card);
-      border-radius: 14px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.09);
-      padding: 0;
-      max-width: 1540px;
-      width: 98%;
+    .container {
+      max-width: 1600px;
       margin: 0 auto;
-      overflow: hidden;
     }
 
-    /* ── PAGE HEADER ── */
+    /* ── HEADER ── */
     .page-header {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 20px 28px 16px;
-      border-bottom: 2px solid var(--border);
+      gap: 20px;
+      padding: 24px 28px;
       background: linear-gradient(135deg, #0056b3 0%, #003d82 100%);
       color: #fff;
+      border-radius: 12px;
+      margin-bottom: 28px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-    .page-header img {
-      height: 48px;
-      width: auto;
-      border-radius: 6px;
-      background: #fff;
-      padding: 4px;
-      flex-shrink: 0;
-    }
-    .page-header-text h1 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: .4px;
-      color: #fff;
-      border: none;
-      padding: 0;
-    }
-    .page-header-text p {
-      margin: 2px 0 0;
-      font-size: 12px;
-      opacity: .8;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-    }
+    .page-header img { height: 56px; width: auto; border-radius: 8px; background: #fff; padding: 4px; }
+    .page-header-text h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: .4px; }
+    .page-header-text p { margin: 4px 0 0; font-size: 12px; opacity: .85; letter-spacing: .5px; text-transform: uppercase; }
 
-    /* ── FORM CONTENT WRAPPER ── */
-    .form-body { padding: 24px 28px; }
-
-    /* ── SECTION GROUPS ── */
-    .section-group {
-      background: var(--section-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      margin-bottom: 20px;
-      overflow: hidden;
-    }
-    .section-group-header {
-      background: var(--section-hd);
-      padding: 8px 16px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--primary);
-      border-bottom: 1px solid var(--border);
+    /* ── NAV TABS ── */
+    .nav-tabs {
       display: flex;
-      align-items: center;
-      gap: 6px;
+      gap: 4px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
-    .section-group-header .dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--primary-light);
-      display: inline-block;
+    .nav-tab {
+      padding: 12px 18px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: .4px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all .2s;
+      white-space: nowrap;
     }
-    .section-group-body {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      padding: 16px;
+    .nav-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
     }
-    @media(max-width:1000px){ .section-group-body { grid-template-columns: repeat(2,1fr); } }
-    @media(max-width:600px){  .section-group-body { grid-template-columns: 1fr; } }
+    .nav-tab:hover { color: var(--text); }
 
-    /* ── LABELS & INPUTS ── */
-    label {
+    .report-section {
+      display: none;
+    }
+    .report-section.active {
       display: block;
+    }
+
+    /* ── STATS GRID ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 4px solid var(--primary);
+    }
+    .stat-card.pending { border-left-color: var(--orange); }
+    .stat-card.uploaded { border-left-color: var(--green); }
+    .stat-card.warning { border-left-color: var(--red); }
+
+    .stat-label {
       font-size: 11px;
       font-weight: 600;
-      letter-spacing: .6px;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 5px;
+      letter-spacing: .6px;
+      margin-bottom: 6px;
     }
-    input[type=text], input[type=date], input[type=number], select, textarea {
-      width: 100%;
+    .stat-number {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--text);
+    }
+    .stat-subtext {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── CHARTS ── */
+    .chart-container {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+      position: relative;
+      height: 400px;
+    }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+    .chart-legend {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 12px;
+    }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-bar input, .filter-bar select {
       padding: 9px 12px;
       border-radius: 7px;
       border: 1.5px solid var(--border);
-      font-size: 13.5px;
+      font-size: 13px;
+      background: var(--card);
       color: var(--text);
-      background: #fff;
-      transition: border-color .18s, box-shadow .18s;
     }
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--primary-light);
-      box-shadow: 0 0 0 3px rgba(0,123,255,.12);
-      outline: none;
-    }
-    select:disabled, input[readonly] {
-      background: #f0f3f7;
-      color: var(--muted);
-      cursor: default;
-    }
-    textarea { resize: vertical; min-height: 60px; }
-
-    /* ── SR REF BADGE ── */
-    .sr-ref-badge {
-      display: inline-block;
-      background: linear-gradient(135deg, #0056b3, #007BFF);
+    .filter-bar input { flex: 1; min-width: 180px; }
+    .filter-bar button {
+      padding: 9px 16px;
+      border: none;
+      background: var(--primary);
       color: #fff;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      padding: 8px 16px;
-      border-radius: 8px;
-      margin-top: 2px;
-      box-shadow: 0 3px 8px rgba(0,86,179,.25);
-      width: 100%;
-      text-align: center;
+      border-radius: 7px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: background .2s;
+      flex-shrink: 0;
     }
+    .filter-bar button:hover { background: var(--primary-light); }
+    .filter-bar .clear-btn { background: #dc3545; }
+    .filter-bar .clear-btn:hover { background: #b91c2a; }
 
-    /* ── PRODUCT TABLE SECTION ── */
-    .table-section {
-      background: var(--section-bg);
-      border: 1px solid var(--border);
+    /* ── TABLE ── */
+    .table-wrapper {
+      background: var(--card);
       border-radius: 10px;
-      margin-bottom: 20px;
       overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
     }
-    .table-section-header {
-      background: var(--section-hd);
-      padding: 8px 16px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--primary);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .table-scroll-wrap {
-      overflow-x: auto;
-    }
+    .table-scroll { overflow-x: auto; }
     table {
       width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      min-width: 900px;
+      border-collapse: collapse;
+      font-size: 13px;
     }
     th {
       background: linear-gradient(135deg, #0056b3 0%, #003d82 100%);
       color: #fff;
       font-weight: 600;
-      font-size: 11px;
-      letter-spacing: .6px;
-      text-transform: uppercase;
-      padding: 11px 8px;
+      padding: 12px 10px;
+      text-align: left;
       white-space: nowrap;
-      border-bottom: 2px solid #003270;
-      position: sticky;
-      top: 0;
+      font-size: 11px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
     }
+    th:hover { background: linear-gradient(135deg, #003d82 0%, #002a5f 100%); }
     td {
-      padding: 8px 7px;
+      padding: 10px;
       border-bottom: 1px solid var(--border);
-      font-size: 13px;
-      vertical-align: middle;
     }
-    #itemsTable tbody tr:last-child td { border-bottom: none; }
-    #itemsTable tbody tr:nth-child(even) td { background: #f7f9fc; }
-    #itemsTable tbody tr:hover td { background: #eef4ff; transition: background .15s; }
+    tbody tr:nth-child(even) { background: #f7f9fc; }
+    tbody tr:hover { background: #eef4ff; }
+    tbody tr:last-child td { border-bottom: none; }
 
-    /* ── TABLE INPUTS ── */
-    .item-row input, .item-row select {
-      padding: 5px 7px;
-      font-size: 12.5px;
-      border-radius: 5px;
-      border: 1.5px solid var(--border);
-      background: #fff;
+    .sort-indicator {
+      margin-left: 6px;
+      opacity: .6;
     }
-    .item-row input[readonly] {
-      font-weight: 700;
-      background: #eef2f7;
-      border: none;
-      color: var(--text);
-    }
-    .item-row td:nth-child(1) { text-align: center; font-weight: 600; color: var(--muted); }
-    .item-row td:nth-child(5),
-    .item-row td:nth-child(6) { text-align: center; }
-    .item-row td:nth-child(7),
-    .item-row td:nth-child(8),
-    .item-row td:nth-child(9),
-    .item-row td:nth-child(10),
-    .item-row td:nth-child(11) { text-align: right; }
 
-    /* ── STATUS BADGES ── */
-    .status-badge {
+    /* ── BADGES ── */
+    .badge {
       display: inline-block;
-      padding: 3px 9px;
+      padding: 4px 10px;
       border-radius: 20px;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: .4px;
       white-space: nowrap;
     }
-    .status-badge.expired      { background: #fde8ea; color: #b91c2a; border: 1px solid #f5c2c7; }
-    .status-badge.short-expiry { background: #fff3cd; color: #854d0e; border: 1px solid #fde68a; }
-    .status-badge.long-expiry  { background: #d1fae5; color: #065f3a; border: 1px solid #6ee7b7; }
-    .status-badge.empty        { background: #f1f5f9; color: var(--muted); border: 1px solid var(--border); }
+    .badge.pending { background: #fff3cd; color: #854d0e; border: 1px solid #fde68a; }
+    .badge.uploaded { background: #d1fae5; color: #065f3a; border: 1px solid #6ee7b7; }
+    .badge.critical { background: #fadbd8; color: #b91c2a; border: 1px solid #f5c2c7; }
 
-    /* ── TABLE ACTIONS ROW ── */
-    .table-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      padding: 12px 16px;
-      background: var(--section-bg);
-      border-top: 1px solid var(--border);
-    }
-
-    /* ── TOTAL BAR ── */
-    .total-bar {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 12px;
-      padding: 14px 20px;
-      background: linear-gradient(135deg, #fff8e1, #fffde7);
-      border: 1.5px solid #f9c74f;
-      border-radius: 10px;
-      margin-bottom: 20px;
-    }
-    .total-bar .total-label {
-      font-size: 13px;
-      font-weight: 600;
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
       color: var(--muted);
-      letter-spacing: .5px;
-      text-transform: uppercase;
     }
-    .total-bar .total-amount {
-      font-size: 26px;
-      font-weight: 900;
-      color: #92400e;
-      letter-spacing: 1px;
-    }
-    .total-bar .total-currency {
-      font-size: 13px;
-      font-weight: 600;
-      color: #b45309;
-      margin-right: -4px;
-    }
+    .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: .5; }
+    .empty-state-text { font-size: 15px; }
 
-    /* ── STICKY BOTTOM ACTION BAR ── */
-    .bottom-action-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: #fff;
-      border-top: 2px solid var(--border);
-      box-shadow: 0 -4px 16px rgba(0,0,0,.1);
-      padding: 12px 28px;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      justify-content: flex-end;
-      z-index: 100;
-    }
-
-    /* ── BUTTONS ── */
-    button {
-      padding: 10px 20px;
+    /* ── ALERTS ── */
+    .alert {
+      padding: 16px 20px;
       border-radius: 8px;
-      border: 0;
-      background: var(--primary-light);
-      color: #fff;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 13px;
-      letter-spacing: .3px;
-      transition: background .18s, transform .1s, box-shadow .18s;
-      box-shadow: 0 3px 6px rgba(0,123,255,.2);
-      white-space: nowrap;
+      margin-bottom: 16px;
+      display: none;
     }
-    button:hover {
-      background: var(--primary);
-      transform: translateY(-1px);
-      box-shadow: 0 5px 10px rgba(0,86,179,.28);
-    }
-    button:active { transform: translateY(0); }
-    button.ghost {
-      background: #fff;
-      color: var(--muted);
-      border: 1.5px solid var(--border);
-      box-shadow: none;
-    }
-    button.ghost:hover { background: var(--section-hd); color: var(--text); transform: none; box-shadow: none; }
-    .small { font-size: 12px; padding: 8px 14px; }
-    .remove {
-      background: var(--red);
-      box-shadow: 0 3px 6px rgba(220,53,69,.2);
-      padding: 5px 10px;
-      font-size: 12px;
-    }
-    .remove:hover { background: #b91c2a; }
+    .alert.show { display: block; }
+    .alert.error { background: #fadbd8; color: #b91c2a; border: 1px solid #f5c2c7; }
+    .alert.success { background: #d1fae5; color: #065f3a; border: 1px solid #6ee7b7; }
+    .alert.info { background: #d1e7f4; color: #0c5394; border: 1px solid #8bb9e1; }
 
-    #submitToSheet  { background: var(--orange) !important; box-shadow: 0 3px 8px rgba(255,137,4,.25) !important; }
-    #submitToSheet:hover { background: #d97200 !important; }
-    #addRow        { background: var(--green); box-shadow: 0 3px 8px rgba(33,115,70,.2); }
-    #addRow:hover  { background: #185a35; }
-    #saveDraft     { background: #5b4fcf !important; box-shadow: 0 3px 8px rgba(91,79,207,.25) !important; }
-    #saveDraft:hover { background: #4338a0 !important; }
-    #openDraft     { background: #fff !important; border: 1.5px solid #5b4fcf !important; color: #5b4fcf !important; box-shadow: none !important; }
-    #openDraft:hover { background: #f3f0ff !important; color: #4338a0 !important; transform: none; }
-    #recoverBtn { border-color: #e74c3c !important; color: #e74c3c !important; }
-    #recoverBtn:hover { background: #fadbd8 !important; color: #c0392b !important; transform: none; }
-
-    /* ── STATUS MESSAGE ── */
-    .status-message {
-      font-weight: 600;
-      color: var(--orange);
-      font-size: 14px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .filter-bar { flex-wrap: wrap; }
+      .filter-bar input, .filter-bar select { flex: 1 1 auto; min-width: 120px; }
     }
-
-    /* ── LOADING SPINNER ── */
-    .spinner {
-      display: inline-block;
-      width: 14px; height: 14px;
-      border: 2px solid var(--border);
-      border-top-color: var(--primary-light);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      vertical-align: middle;
-      margin-right: 4px;
+    @media (max-width: 768px) {
+      .page-header { flex-direction: column; text-align: center; }
+      .page-header img { height: 40px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .chart-container { height: 300px; }
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── PRINT ── */
-    @media print {
-      body * { visibility: hidden; }
-      #printArea, #printArea * { visibility: visible; }
-      #printArea { position: absolute; top:0; left:0; width:100%; padding:10px; }
-      .card { box-shadow:none; border-radius:0; padding:0; }
-      #printContent p { font-size:11px !important; }
-      #printContent table { border-radius:0; border:1px solid #333; font-size:10px !important; }
-      #printContent th, #printContent td { padding:4px; border-color:#333; }
-      #printContent th { background:#eee !important; color:#000 !important; }
-      .bottom-action-bar { display: none; }
-    }
-
-    /* ── REPORT / PREVIEW STYLES ── */
-    .result {
-      margin-top: 25px;
-      padding: 20px;
-      background: #fcfcfd;
-      border-radius: 10px;
-      border: 2px dashed #c7deff;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,.04);
-    }
-    .report-company-name {
-      text-align:center; font-weight:700; font-size:26px; color:#000;
-      margin-bottom:5px; text-transform:uppercase;
-    }
-    .report-title {
-      text-align:center; font-weight:900; font-size:26px; color:var(--primary);
-      margin:0 0 18px; padding-bottom:5px; border-bottom:1px solid #ddd; text-transform:uppercase;
-    }
-    .report-header {
-      display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
-      padding:12px; margin-bottom:20px; background:#f8f9fa;
-      border-radius:8px; border:1px solid #eee;
-    }
-    .report-meta-item { font-size:13px; line-height:1.2; }
-    .report-meta-item strong {
-      color:var(--muted); font-weight:600; display:block;
-      text-transform:uppercase; font-size:10px; margin-bottom:2px;
-    }
-    .report-table {
-      margin-top:10px; border:1px solid var(--border) !important;
-      border-collapse:collapse !important; border-radius:8px; overflow:hidden;
-    }
-    .report-table th, .report-table td { padding:8px 10px; font-size:12px; border:1px solid #eee; }
-    .report-table th { background:var(--primary); color:#fff; font-weight:600; text-transform:uppercase; }
-    .report-table tr:nth-child(even) { background-color:#f7f9fc; }
-    .report-table tr:hover { background-color:#eef4ff; }
-    .report-footer-total {
-      text-align:right; font-size:17px; font-weight:700;
-      padding:14px 20px; margin-top:18px;
-      background:#eef4ff; border-top:3px solid var(--primary-light);
-      border-radius:0 0 8px 8px;
-    }
-    .report-footer-total span { color:var(--primary); font-size:22px; margin-left:12px; }
   </style>
-
 </head>
 <body>
-  <div class="card">
 
-    <!-- PAGE HEADER -->
-    <div class="page-header">
-      <img src="https://www.pristinepearlpharma.in/images/alt-logo.png" alt="Logo">
-      <div class="page-header-text">
-        <h1>Pristine Pearl Pharma Pvt Ltd</h1>
-        <p>Sales Return Manager</p>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <img src="https://www.pristinepearlpharma.in/images/alt-logo.png" alt="Logo">
+    <div class="page-header-text">
+      <h1>Sales Return — Advanced Analytics</h1>
+      <p>Comprehensive Reports & Insights</p>
+    </div>
+  </div>
+
+  <!-- ALERT -->
+  <div id="alert" class="alert"></div>
+
+  <!-- NAVIGATION TABS -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchReport('overview')">📊 Overview</button>
+    <button class="nav-tab" onclick="switchReport('stockist')">🏪 Stockist Analysis</button>
+    <button class="nav-tab" onclick="switchReport('area')">🗺️ Area Breakdown</button>
+    <button class="nav-tab" onclick="switchReport('value')">💰 Value Analysis</button>
+    <button class="nav-tab" onclick="switchReport('aging')">⏱️ Aging Report</button>
+    <button class="nav-tab" onclick="switchReport('trends')">📈 Trends</button>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       REPORT 1: OVERVIEW
+       ════════════════════════════════════════════ -->
+  <div id="overview" class="report-section active">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">📊 Total Records</div>
+        <div class="stat-number" id="ov-total">0</div>
       </div>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
-        <div class="sr-ref-badge" id="memberID" style="width:auto;min-width:130px;">—</div>
+      <div class="stat-card pending">
+        <div class="stat-label">⏳ Pending Drafts</div>
+        <div class="stat-number" id="ov-pending">0</div>
+        <div class="stat-subtext" id="ov-pending-pct">0%</div>
+      </div>
+      <div class="stat-card uploaded">
+        <div class="stat-label">✅ Uploaded</div>
+        <div class="stat-number" id="ov-uploaded">0</div>
+        <div class="stat-subtext" id="ov-uploaded-pct">0%</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-label">⚠️ Overdue (>7 days)</div>
+        <div class="stat-number" id="ov-overdue">0</div>
       </div>
     </div>
 
-    <div class="form-body">
-
-      <!-- SECTION 1: Invoice & Stockist -->
-      <div class="section-group">
-        <div class="section-group-header"><span class="dot"></span> Invoice &amp; Stockist Details</div>
-        <div class="section-group-body">
-
-          <div>
-            <label for="date">C.Inv Date</label>
-            <input id="date" type="date">
-          </div>
-          <div>
-            <label for="cInvNo">C.Inv No.</label>
-            <input id="cInvNo" type="text" placeholder="Customer Inv. No." oninput="this.value=this.value.toUpperCase()">
-          </div>
-          <div>
-            <label for="stockist">Stockist Name</label>
-            <input type="text" id="stockistSearch" placeholder="🔍 Type to search stockist..." style="margin-bottom:5px;">
-            <select id="stockist"><option value="">-- Loading stockists... --</option></select>
-          </div>
-          <div>
-            <label for="stockistCode">Stockist Code</label>
-            <input id="stockistCode" type="text" readonly>
-          </div>
-          <div>
-            <label for="area">Area</label>
-            <input id="area" type="text" readonly>
-          </div>
-          <div>
-            <label for="team">State / Team</label>
-            <input id="team" type="text" readonly>
-          </div>
-          <div>
-            <label for="noOfBoxes">No. of Boxes</label>
-            <input id="noOfBoxes" type="number" min="0" placeholder="Approx. boxes returned">
-          </div>
-
-          <div>
-            <label for="returnValue">Value (₹)</label>
-            <input id="returnValue" type="number" min="0" step="0.01" placeholder="Approx. return value">
-          </div>
-
-          <!-- hidden nature field kept for data compatibility -->
-          <div style="display:none">
-            <select id="returnNature" disabled><option value="Sales Return">Sales Return</option></select>
-          </div>
-
-        </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px; margin-bottom: 20px;">
+      <div class="chart-container">
+        <div class="chart-title">Draft vs Upload Status</div>
+        <canvas id="overviewChart"></canvas>
       </div>
-
-      <!-- SECTION 2: Courier Details -->
-      <div class="section-group">
-        <div class="section-group-header"><span class="dot"></span> Courier Details</div>
-        <div class="section-group-body">
-          <div>
-            <label>Courier Name</label>
-            <input type="text" id="courierName" placeholder="COURIER NAME" oninput="this.value=this.value.replace(/[^A-Z ]/gi,'').toUpperCase();">
-          </div>
-          <div>
-            <label>POD No.</label>
-            <input type="text" id="podNo" placeholder="POD / AWB NUMBER" oninput="this.value=this.value.toUpperCase();">
-          </div>
-          <!-- hidden memberID input kept for JS compatibility -->
-          <input type="hidden" name="memberID" id="memberIDHidden">
-        </div>
+      <div class="chart-container">
+        <div class="chart-title">Pending Age Distribution</div>
+        <canvas id="pendingAgeChart"></canvas>
       </div>
+    </div>
 
-      <!-- SECTION 3: Product Details Table -->
-      <div class="table-section">
-        <div class="table-section-header">
-          <span><span class="dot"></span> Product Details</span>
-          <span id="rowCountBadge" style="font-size:11px;font-weight:600;color:var(--muted);">0 items</span>
-        </div>
-        <div class="table-scroll-wrap">
-          <table id="itemsTable">
-            <thead>
-              <tr>
-                <th style="width:38px">S.No</th>
-                <th style="width:210px">Product Name</th>
-                <th style="width:90px">Batch</th>
-                <th style="width:78px">Expiry</th>
-                <th style="width:68px">Qty</th>
-                <th style="width:68px">FQty</th>
-                <th style="width:75px">Rate</th>
-                <th style="width:62px">GST %</th>
-                <th style="width:80px">GST Val</th>
-                <th style="width:80px">Taxable</th>
-                <th style="width:88px">Total</th>
-                <th style="width:100px">Status</th>
-                <th style="width:160px">Remarks</th>
-                <th style="width:36px"></th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="table-actions">
-          <button id="addRow">＋ Add Product</button>
-          <button id="clearRows" class="ghost small">🗑 Clear All</button>
-        </div>
-      </div>
+    <div class="filter-bar">
+      <input id="ov-search" type="text" placeholder="🔍 Search..." onchange="updateOverview()">
+      <input id="ov-dateFrom" type="date" onchange="updateOverview()">
+      <input id="ov-dateTo" type="date" onchange="updateOverview()">
+      <button onclick="clearFiltersOverview()">✕ Clear</button>
+      <button class="ghost" onclick="downloadAllReports()">⬇ Download All</button>
+    </div>
 
-      <!-- TOTAL BAR -->
-      <div class="total-bar">
-        <span class="total-label">Grand Total Return Value</span>
-        <span class="total-currency">₹</span>
-        <span class="total-amount" id="totalValueDisplay">0.00</span>
-      </div>
-
-      <!-- PREVIEW AREA -->
-      <div id="printArea"><div id="preview" class="result" hidden></div></div>
-
-    </div><!-- /form-body -->
-  </div><!-- /card -->
-
-  <!-- STICKY BOTTOM ACTION BAR -->
-  <div class="bottom-action-bar">
-    <span id="uploadStatus" class="status-message" style="display:none;margin-right:auto;"></span>
-    <span id="lastSaveTime" style="font-size:11px;color:#999;margin-right:auto;font-weight:500;">⏱ Not saved yet</span>
-    <button id="recoverBtn" class="ghost small" style="display:none;border-color:#e74c3c;color:#e74c3c;margin-right:4px;">🔄 Recover</button>
-    <button id="downloadBackup" class="ghost small" style="border-color:#f39c12;color:#f39c12;margin-right:4px;">⬇ Backup</button>
-    <button id="openDraft" class="ghost small">📂 Open Draft</button>
-    <button id="saveDraft">💾 Save Draft</button>
-    <button id="submitToSheet">⬆ Upload</button>
-  </div>
-
-  <!-- DRAFT MODAL -->
-  <div id="draftModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:14px;width:92%;max-width:820px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
-      <div style="background:linear-gradient(135deg,#0056b3,#003d82);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-weight:700;font-size:15px;letter-spacing:.4px;">📂 Open Draft</span>
-        <button onclick="closeDraftModal()" style="background:rgba(255,255,255,.2);padding:4px 10px;font-size:13px;border-radius:6px;box-shadow:none;">✕</button>
-      </div>
-      <div style="padding:12px 16px;border-bottom:1px solid #eee;display:flex;gap:8px;align-items:center;">
-        <input id="draftSearchBox" type="text" placeholder="🔍 Search by SR Ref, Stockist, Invoice No..." style="flex:1;padding:8px 12px;border-radius:7px;border:1.5px solid #dde3ea;font-size:13px;">
-        <button onclick="loadDraftList()" style="padding:8px 14px;font-size:12px;">🔄 Refresh</button>
-      </div>
-      <div id="draftListWrap" style="overflow-y:auto;flex:1;padding:12px 16px;">
-        <p style="color:#888;text-align:center;margin-top:30px;">Click Refresh to load drafts.</p>
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortTable('overview-table', 0)">SR Ref <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('overview-table', 1)">Draft Date <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('overview-table', 2)">Upload Date <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('overview-table', 3)">Stockist <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('overview-table', 4)">Value (₹) <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('overview-table', 5)">Status <span class="sort-indicator">⇅</span></th>
+            </tr>
+          </thead>
+          <tbody id="overview-table"></tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- SUCCESS DIALOGUE BOX -->
-  <div id="successModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:14px;width:92%;max-width:450px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
-      <div style="background:linear-gradient(135deg,#217346,#185a35);color:#fff;padding:24px 28px;text-align:center;">
-        <div style="font-size:48px;margin-bottom:12px;">✅</div>
-        <h2 id="successTitle" style="margin:0;font-size:20px;font-weight:700;letter-spacing:.4px;">Success!</h2>
+  <!-- ════════════════════════════════════════════
+       REPORT 2: STOCKIST ANALYSIS
+       ════════════════════════════════════════════ -->
+  <div id="stockist" class="report-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">🏪 Unique Stockists</div>
+        <div class="stat-number" id="st-count">0</div>
       </div>
-      <div style="padding:24px 28px;text-align:center;flex:1;">
-        <p id="successMessage" style="margin:0;font-size:15px;color:#666;line-height:1.6;">Your data has been saved successfully.</p>
+      <div class="stat-card">
+        <div class="stat-label">💰 Total Value</div>
+        <div class="stat-number" id="st-value" style="font-size: 20px;">₹0</div>
       </div>
-      <div style="padding:16px 28px;text-align:center;border-top:1px solid #eee;">
-        <button onclick="closeSuccessModal()" style="padding:10px 28px;font-size:13px;background:#217346;color:#fff;border:0;border-radius:8px;cursor:pointer;font-weight:600;">OK</button>
+      <div class="stat-card pending">
+        <div class="stat-label">🏆 Top Stockist</div>
+        <div class="stat-number" id="st-top" style="font-size: 16px;">—</div>
+      </div>
+    </div>
+
+    <div class="chart-container" style="height: 450px;">
+      <div class="chart-title">Returns by Stockist (Top 10)</div>
+      <canvas id="stockistChart"></canvas>
+    </div>
+
+    <div class="filter-bar">
+      <input id="st-search" type="text" placeholder="Search stockist...">
+      <button onclick="updateStockist()">🔍 Search</button>
+      <button class="clear-btn" onclick="clearFiltersStockist()">✕ Clear</button>
+    </div>
+
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortTable('stockist-table', 0)">Stockist <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('stockist-table', 1)">Count <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('stockist-table', 2)">Pending <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('stockist-table', 3)">Uploaded <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('stockist-table', 4)">Total Value (₹) <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('stockist-table', 5)">Avg Value (₹) <span class="sort-indicator">⇅</span></th>
+            </tr>
+          </thead>
+          <tbody id="stockist-table"></tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <!-- ════════════════════════════════════════════
+       REPORT 3: AREA BREAKDOWN
+       ════════════════════════════════════════════ -->
+  <div id="area" class="report-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">🗺️ Unique Areas</div>
+        <div class="stat-number" id="ar-count">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">📦 Total Boxes</div>
+        <div class="stat-number" id="ar-boxes">0</div>
+      </div>
+      <div class="stat-card uploaded">
+        <div class="stat-label">✅ Upload Rate</div>
+        <div class="stat-number" id="ar-rate" style="font-size: 20px;">0%</div>
+      </div>
+    </div>
 
-  <script>
-    // ** IMPORTANT: Replace this with your actual Google Apps Script Web App URL **
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbw7R-tgfjmEDKals_cFeOyLobxcU2ipXxhOufdU7nIp7-g9G2KbNfxLizRlk8Ts-obm/exec';
-    const stockistEl       = document.getElementById('stockist');
-    const submitBtn        = document.getElementById('submitToSheet');
-    const uploadStatus     = document.getElementById('uploadStatus');
-    const totalValueDisplay = document.getElementById('totalValueDisplay');
-    const returnNatureEl   = document.getElementById('returnNature');
+    <div class="chart-container" style="height: 450px;">
+      <div class="chart-title">Returns & Upload Status by Area</div>
+      <canvas id="areaChart"></canvas>
+    </div>
 
-    stockistEl.addEventListener('change', () => {
-      const sel = stockistEl.selectedOptions[0];
-      document.getElementById('stockistCode').value = sel ? sel.value       : '';
-      document.getElementById('area').value         = sel ? sel.dataset.area || '' : '';
-      document.getElementById('team').value         = sel ? sel.dataset.team || '' : '';
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortTable('area-table', 0)">Area <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('area-table', 1)">Count <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('area-table', 2)">Pending <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('area-table', 3)">Upload Rate <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('area-table', 4)">Total Boxes <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('area-table', 5)">Total Value (₹) <span class="sort-indicator">⇅</span></th>
+            </tr>
+          </thead>
+          <tbody id="area-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       REPORT 4: VALUE ANALYSIS
+       ════════════════════════════════════════════ -->
+  <div id="value" class="report-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">💰 Total Value</div>
+        <div class="stat-number" id="va-total" style="font-size: 20px;">₹0</div>
+      </div>
+      <div class="stat-card pending">
+        <div class="stat-label">⏳ Pending Value</div>
+        <div class="stat-number" id="va-pending" style="font-size: 20px;">₹0</div>
+      </div>
+      <div class="stat-card uploaded">
+        <div class="stat-label">✅ Uploaded Value</div>
+        <div class="stat-number" id="va-uploaded" style="font-size: 20px;">₹0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">📊 Avg Value per Return</div>
+        <div class="stat-number" id="va-avg" style="font-size: 20px;">₹0</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">Value Distribution (Pending vs Uploaded)</div>
+      <canvas id="valueChart"></canvas>
+    </div>
+
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortTable('value-table', 0)">Stockist <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('value-table', 1)">Records <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('value-table', 2)">Total Value (₹) <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('value-table', 3)">Pending Value (₹) <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('value-table', 4)">Avg Value (₹) <span class="sort-indicator">⇅</span></th>
+            </tr>
+          </thead>
+          <tbody id="value-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       REPORT 5: AGING REPORT
+       ════════════════════════════════════════════ -->
+  <div id="aging" class="report-section">
+    <div class="stats-grid">
+      <div class="stat-card warning">
+        <div class="stat-label">🔴 Critical (>14 days)</div>
+        <div class="stat-number" id="ag-critical">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">🟠 High (8-14 days)</div>
+        <div class="stat-number" id="ag-high">0</div>
+      </div>
+      <div class="stat-card pending">
+        <div class="stat-label">🟡 Medium (3-7 days)</div>
+        <div class="stat-number" id="ag-medium">0</div>
+      </div>
+      <div class="stat-card uploaded">
+        <div class="stat-label">🟢 Fresh (<3 days)</div>
+        <div class="stat-number" id="ag-fresh">0</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">Pending Age Distribution</div>
+      <canvas id="agingChart"></canvas>
+    </div>
+
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortTable('aging-table', 0)">SR Ref <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('aging-table', 1)">Days Pending <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('aging-table', 2)">Draft Date <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('aging-table', 3)">Stockist <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('aging-table', 4)">Value (₹) <span class="sort-indicator">⇅</span></th>
+              <th onclick="sortTable('aging-table', 5)">Priority <span class="sort-indicator">⇅</span></th>
+            </tr>
+          </thead>
+          <tbody id="aging-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       REPORT 6: TRENDS
+       ════════════════════════════════════════════ -->
+  <div id="trends" class="report-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">📅 Days of Data</div>
+        <div class="stat-number" id="tr-days">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">📊 Records/Day Avg</div>
+        <div class="stat-number" id="tr-daily">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">💹 Highest Activity</div>
+        <div class="stat-number" id="tr-peak" style="font-size: 16px;">—</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px;">
+      <div class="chart-container" style="height: 300px;">
+        <div class="chart-title">Daily Submissions Trend</div>
+        <canvas id="trendsLineChart"></canvas>
+      </div>
+      <div class="chart-container" style="height: 300px;">
+        <div class="chart-title">Daily Upload Rate Trend</div>
+        <canvas id="trendsUploadChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+<script>
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbziC3U1Yds6bbc6XkliQdpctIoajspM1upHOUFQ5_V9t0yIkSkuJt_XyaxXG1b6ac-H/exec';
+  let allDrafts = [];
+  let chartInstances = {};
+
+  // ── INIT ──
+  window.addEventListener('DOMContentLoaded', loadAllData);
+
+  async function loadAllData() {
+    showAlert('Loading analytics...', 'info');
+    try {
+      const res = await fetch(scriptUrl + '?action=getDrafts');
+      const json = await res.json();
+      allDrafts = json.drafts || [];
+      initAllReports();
+      hideAlert();
+    } catch (err) {
+      showAlert('Failed to load data: ' + err.message, 'error');
+    }
+  }
+
+  function initAllReports() {
+    updateOverview();
+    updateStockist();
+    updateArea();
+    updateValue();
+    updateAging();
+    updateTrends();
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // REPORT 1: OVERVIEW
+  // ═════════════════════════════════════════════════════════════════
+  
+  function updateOverview() {
+    const query = document.getElementById('ov-search').value.toLowerCase();
+    const dateFrom = document.getElementById('ov-dateFrom').value;
+    const dateTo = document.getElementById('ov-dateTo').value;
+
+    let filtered = filterData(allDrafts, query, dateFrom, dateTo);
+    
+    const pending = filtered.filter(d => !d.rGenDate || d.rGenDate.trim() === '');
+    const uploaded = filtered.filter(d => d.rGenDate && d.rGenDate.trim() !== '');
+    const overdue = pending.filter(d => calcDaysPending(d.rDraftDate) > 7);
+
+    document.getElementById('ov-total').textContent = filtered.length;
+    document.getElementById('ov-pending').textContent = pending.length;
+    document.getElementById('ov-pending-pct').textContent = `${Math.round(pending.length / filtered.length * 100) || 0}%`;
+    document.getElementById('ov-uploaded').textContent = uploaded.length;
+    document.getElementById('ov-uploaded-pct').textContent = `${Math.round(uploaded.length / filtered.length * 100) || 0}%`;
+    document.getElementById('ov-overdue').textContent = overdue.length;
+
+    renderOverviewTable(filtered);
+    renderOverviewCharts(pending, uploaded);
+  }
+
+  function renderOverviewTable(data) {
+    const tbody = document.getElementById('overview-table');
+    tbody.innerHTML = '';
+    data.forEach(d => {
+      const status = d.rGenDate && d.rGenDate.trim() !== '' ? 'uploaded' : 'pending';
+      const row = tbody.insertRow();
+      row.innerHTML = `
+        <td style="font-weight:700;color:var(--primary);">${d.memberID || ''}</td>
+        <td>${formatDate(d.rDraftDate)}</td>
+        <td>${formatDate(d.rGenDate)}</td>
+        <td>${d.stockistName || ''}</td>
+        <td style="text-align:right;">₹${parseFloat(d.returnValue || 0).toLocaleString('en-IN', {maximumFractionDigits: 2})}</td>
+        <td><span class="badge ${status}">${status === 'uploaded' ? '✅ Uploaded' : '⏳ Pending'}</span></td>
+      `;
+    });
+  }
+
+  function renderOverviewCharts(pending, uploaded) {
+    destroyChart('overviewChart');
+    destroyChart('pendingAgeChart');
+
+    const ctx1 = document.getElementById('overviewChart').getContext('2d');
+    chartInstances.overviewChart = new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: ['Pending', 'Uploaded'],
+        datasets: [{
+          data: [pending.length, uploaded.length],
+          backgroundColor: ['#FF8904', '#217346'],
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
     });
 
-    /* ── FETCH STOCKIST LIST ── */
-    (function loadStockists() {
-      const url = `https://docs.google.com/spreadsheets/d/1EYY6jkJ5DJ7RgRXhtVRmMtGwhso-0rDWXJpbISmFySU/export?format=csv&gid=0`;
-      fetch(url)
-        .then(r => { if (!r.ok) throw new Error('Network error'); return r.text(); })
-        .then(csv => {
-          const lines = csv.trim().split('\n').slice(1);
-          stockistEl.innerHTML = '<option value="">-- Select Customer --</option>';
-          lines.forEach(line => {
-            const cols  = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
-            const clean = cols.map(c => c.replace(/^"|"$/g, '').trim());
-            const [code, area, team, name] = clean;
-            if (!name) return;
-            const opt = document.createElement('option');
-            opt.value        = code  || '';
-            opt.dataset.area = area  || '';
-            opt.dataset.team = team  || '';
-            opt.textContent  = name;
-            stockistEl.appendChild(opt);
-          });
-          if (window._rebuildSearchOptions) window._rebuildSearchOptions();
-        })
-        .catch(err => {
-          stockistEl.innerHTML = '<option value="">-- Failed to load stockists --</option>';
-          console.error('Stockist fetch error:', err);
-        });
-    })();
+    const ageBuckets = { '0-3': 0, '4-7': 0, '8-14': 0, '15+': 0 };
+    pending.forEach(d => {
+      const days = calcDaysPending(d.rDraftDate);
+      if (days <= 3) ageBuckets['0-3']++;
+      else if (days <= 7) ageBuckets['4-7']++;
+      else if (days <= 14) ageBuckets['8-14']++;
+      else ageBuckets['15+']++;
+    });
 
-    /* ── FETCH PRODUCT LIST ── */
-    let products = [];
-    (function loadProducts() {
-      const url = `https://docs.google.com/spreadsheets/d/1VVOiZHQSurf7tMa0p8TTcNy44qKvkOg7vR1v9VFqnyU/export?format=csv&gid=0`;
-      fetch(url)
-        .then(r => { if (!r.ok) throw new Error('Network error'); return r.text(); })
-        .then(csv => {
-          products = csv.trim().split('\n').slice(1)
-            .map(line => line.replace(/^"|"$/g, '').trim())
-            .filter(Boolean);
-          document.querySelectorAll('.product-select').forEach(sel => {
-            const current = sel.value;
-            sel.innerHTML = '<option value="">-- Select Product --</option>';
-            products.forEach(p => {
-              const o = document.createElement('option');
-              o.value = o.textContent = p;
-              sel.appendChild(o);
-            });
-            if (current) sel.value = current;
-          });
-        })
-        .catch(err => console.error('Product fetch error:', err));
-    })();
+    const ctx2 = document.getElementById('pendingAgeChart').getContext('2d');
+    chartInstances.pendingAgeChart = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(ageBuckets),
+        datasets: [{
+          label: 'Days Pending',
+          data: Object.values(ageBuckets),
+          backgroundColor: ['#217346', '#FF8904', '#FF6B35', '#dc3545'],
+          borderColor: '#fff',
+          borderWidth: 1
+        }]
+      },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
 
-    const gstOptions  = [5, 12, 18];
-    const itemsTable  = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
-    const addRowBtn   = document.getElementById('addRow');
-    const clearRowsBtn = document.getElementById('clearRows');
-    const previewDiv  = document.getElementById('preview');
-    const dateEl      = document.getElementById('date');
-    const cInvNoEl    = document.getElementById('cInvNo');
-    const noOfBoxesEl = document.getElementById('noOfBoxes');
+  // ═════════════════════════════════════════════════════════════════
+  // REPORT 2: STOCKIST ANALYSIS
+  // ═════════════════════════════════════════════════════════════════
 
-    function createSelect(options, className = '', isNumeric = false) {
-      const select = document.createElement('select');
-      select.className = className;
-      select.innerHTML = '<option value="">-- Select --</option>';
-      options.forEach(option => {
-        const opt = document.createElement('option');
-        opt.value = option;
-        opt.textContent = isNumeric ? `${option}%` : option;
-        select.appendChild(opt);
-      });
-      return select;
-    }
+  function updateStockist() {
+    const query = document.getElementById('st-search').value.toLowerCase();
+    let filtered = allDrafts;
+    if (query) filtered = filtered.filter(d => (d.stockistName || '').toLowerCase().includes(query));
 
-    function createReadOnlyInput(className) {
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = className;
-      input.readOnly = true;
-      input.value = '0.00';
-      return input;
-    }
-
-    const memberIDBadge  = document.getElementById('memberID');
-    const memberIDHidden = document.getElementById('memberIDHidden');
-
-    function getUniqueMemberID() {
-      let usedIDs = JSON.parse(localStorage.getItem('usedIDs') || '[]');
-      let newID;
-      do {
-        newID = 'SR' + Math.floor(10000 + Math.random() * 90000);
-      } while (usedIDs.includes(newID));
-      usedIDs.push(newID);
-      localStorage.setItem('usedIDs', JSON.stringify(usedIDs));
-      return newID;
-    }
-
-    const _srID = getUniqueMemberID();
-    memberIDBadge.textContent = _srID;
-    memberIDHidden.value      = _srID;
-
-    function updateRowCountBadge() {
-      const n = itemsTable ? itemsTable.rows.length : 0;
-      const badge = document.getElementById('rowCountBadge');
-      if (badge) badge.textContent = n + (n === 1 ? ' item' : ' items');
-    }
-
-    function formatExpiryInput(input) {
-      let value = input.value.replace(/\D/g, '');
-      if (value.length > 2) value = value.substring(0, 2) + '/' + value.substring(2, 4);
-      input.value = value;
-    }
-
-    function newRow() {
-      const row = itemsTable.insertRow();
-      row.classList.add('item-row');
-      row.insertCell(0).textContent = itemsTable.rows.length;
-
-      // Product Name
-      const prodCell = row.insertCell(1);
-      prodCell.style.minWidth = '180px';
-
-      const prodSearch = document.createElement('input');
-      prodSearch.type = 'text';
-      prodSearch.placeholder = 'Search product...';
-      prodSearch.className = 'prod-search-input';
-      prodSearch.style.cssText = 'width:100%;margin-bottom:3px;font-size:12px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);box-sizing:border-box;';
-
-      const prodSelect = document.createElement('select');
-      prodSelect.className = 'product-select';
-      prodSelect.style.cssText = 'width:100%;font-size:12px;';
-      prodSelect.innerHTML = '<option value="">-- Select Product --</option>';
-      products.forEach(p => {
-        const o = document.createElement('option');
-        o.value = o.textContent = p;
-        prodSelect.appendChild(o);
-      });
-
-      prodSearch.addEventListener('input', function () {
-        const kw = this.value.toLowerCase();
-        const saved = prodSelect.value;
-        prodSelect.innerHTML = '<option value="">-- Select Product --</option>';
-        products.filter(p => p.toLowerCase().includes(kw)).forEach(p => {
-          const o = document.createElement('option');
-          o.value = o.textContent = p;
-          prodSelect.appendChild(o);
-        });
-        prodSelect.size = kw ? Math.min(6, prodSelect.options.length) : 1;
-        if (saved) prodSelect.value = saved;
-      });
-      prodSearch.addEventListener('blur', () => setTimeout(() => { prodSelect.size = 1; }, 200));
-      prodSelect.addEventListener('change', () => { prodSearch.value = ''; prodSelect.size = 1; });
-
-      prodCell.appendChild(prodSearch);
-      prodCell.appendChild(prodSelect);
-
-      // Batch
-      const batchInput = document.createElement('input');
-      batchInput.type = 'text';
-      batchInput.className = 'batch-input';
-      batchInput.placeholder = 'Batch No.';
-      batchInput.setAttribute('oninput', 'this.value = this.value.toUpperCase()');
-      row.insertCell(2).appendChild(batchInput);
-
-      // Expiry
-      const expiryInput = document.createElement('input');
-      expiryInput.type = 'text';
-      expiryInput.maxLength = 5;
-      expiryInput.placeholder = 'MM/YY';
-      expiryInput.className = 'expiry-input';
-      row.insertCell(3).appendChild(expiryInput);
-
-      expiryInput.addEventListener('input', function () { formatExpiryInput(this); });
-      expiryInput.addEventListener('change', function () {
-        const statusInput = row.querySelector('.status-input');
-        const val = this.value.trim();
-        if (!val || val.length < 5) return;
-        const [mm, yy] = val.split('/');
-        if (!mm || !yy) return;
-        const expiryDate   = new Date(`20${yy}`, parseInt(mm), 0);
-        const currentDate  = new Date();
-        const currentMonth = currentDate.getMonth() + 1;
-        const currentYear  = currentDate.getFullYear() % 100;
-        const sixMonthsLater = new Date(currentDate);
-        sixMonthsLater.setMonth(currentDate.getMonth() + 6);
-        if (expiryDate < currentDate || (parseInt(yy) === currentYear && parseInt(mm) === currentMonth)) {
-          statusInput.value = 'Expired';
-        } else if (expiryDate <= sixMonthsLater) {
-          statusInput.value = 'Short Expiry';
-        } else {
-          statusInput.value = 'Long Expiry';
-        }
-      });
-
-      // Qty
-      const qtyInput = document.createElement('input');
-      qtyInput.type = 'number'; qtyInput.min = '1';
-      qtyInput.className = 'qty-input'; qtyInput.value = '1';
-      row.insertCell(4).appendChild(qtyInput);
-
-      // FQty
-      const fqtyInput = document.createElement('input');
-      fqtyInput.type = 'number'; fqtyInput.min = '0';
-      fqtyInput.className = 'fqty-input'; fqtyInput.value = '0';
-      row.insertCell(5).appendChild(fqtyInput);
-
-      // Rate
-      const rateInput = document.createElement('input');
-      rateInput.type = 'number'; rateInput.min = '0';
-      rateInput.className = 'rate-input'; rateInput.step = '0.01';
-      row.insertCell(6).appendChild(rateInput);
-
-      // GST %
-      const gstSelect = createSelect(gstOptions, 'gst-select', true);
-      gstSelect.value = 5;
-      row.insertCell(7).appendChild(gstSelect);
-
-      // Computed cols
-      row.insertCell(8).appendChild(createReadOnlyInput('gst-value-display'));
-      row.insertCell(9).appendChild(createReadOnlyInput('taxable-value-display'));
-      row.insertCell(10).appendChild(createReadOnlyInput('total-value-display'));
-
-      // Status
-      const statusInput = document.createElement('input');
-      statusInput.className = 'status-input';
-      statusInput.style.width = '90px';
-      statusInput.readOnly = true;
-      statusInput.tabIndex = -1;
-      row.insertCell(11).appendChild(statusInput);
-
-      // Remarks
-      const remarksCell = row.insertCell(12);
-      remarksCell.style.minWidth = '150px';
-      const remarksReasons = ['Damage','Breakage','Wrong Product Supplied','Excess Supply','Wrong Billing','Product Recall','Slow Moving','Market Complaint','Others'];
-      const remarksSelect = document.createElement('select');
-      remarksSelect.className = 'remarks-select';
-      remarksSelect.style.cssText = 'width:100%;margin-bottom:3px;font-size:12px;';
-      remarksSelect.innerHTML = '<option value="">-- Reason --</option>' +
-        remarksReasons.map(r => `<option value="${r}">${r}</option>`).join('');
-      const remarksText = document.createElement('input');
-      remarksText.type = 'text';
-      remarksText.className = 'remarks-input remarks-other-text';
-      remarksText.placeholder = 'Specify...';
-      remarksText.style.cssText = 'width:100%;display:none;font-size:12px;margin-top:2px;';
-      remarksSelect.addEventListener('change', function () {
-        remarksText.style.display = this.value === 'Others' ? 'block' : 'none';
-        if (this.value !== 'Others') remarksText.value = '';
-      });
-      remarksCell.appendChild(remarksSelect);
-      remarksCell.appendChild(remarksText);
-
-      // Remove
-      const removeBtn = document.createElement('button');
-      removeBtn.textContent = 'X';
-      removeBtn.className = 'remove small';
-      removeBtn.onclick = () => { row.remove(); updateSNoAndGrandTotal(); updateRowCountBadge(); };
-      row.insertCell(13).appendChild(removeBtn);
-
-      [qtyInput, rateInput, gstSelect].forEach(el => el.addEventListener('input', () => updateRowCalculations(row)));
-      updateRowCalculations(row);
-    }
-
-    function updateRowCalculations(row) {
-      const qty        = parseFloat(row.querySelector('.qty-input').value)  || 0;
-      const rate       = parseFloat(row.querySelector('.rate-input').value) || 0;
-      const gstPercent = parseFloat(row.querySelector('.gst-select').value) || 0;
-      const taxableValue = qty * rate;
-      const gstValue     = taxableValue * (gstPercent / 100);
-      const totalValue   = taxableValue + gstValue;
-      row.querySelector('.taxable-value-display').value = taxableValue.toFixed(2);
-      row.querySelector('.gst-value-display').value     = gstValue.toFixed(2);
-      row.querySelector('.total-value-display').value   = totalValue.toFixed(2);
-      updateGrandTotal();
-    }
-
-    function updateSNoAndGrandTotal() {
-      Array.from(itemsTable.rows).forEach((row, i) => { row.cells[0].textContent = i + 1; });
-      updateGrandTotal();
-    }
-
-    function updateGrandTotal() {
-      let grandTotal = 0;
-      Array.from(itemsTable.rows).forEach(row => {
-        grandTotal += parseFloat(row.querySelector('.total-value-display').value) || 0;
-      });
-      totalValueDisplay.textContent = grandTotal.toFixed(2);
-    }
-
-    addRowBtn.addEventListener('click',   () => { newRow(); updateRowCountBadge(); });
-    clearRowsBtn.addEventListener('click', () => { itemsTable.innerHTML = ''; updateGrandTotal(); updateRowCountBadge(); });
-
-    function collectData() {
-      const returnNature = returnNatureEl.value;
-      const rows = Array.from(itemsTable.rows).map(row => ({
-        prod:         row.querySelector('.product-select').value,
-        nature:       returnNature,
-        batch:        row.querySelector('.batch-input').value,
-        expiry:       row.querySelector('.expiry-input').value,
-        qty:          row.querySelector('.qty-input').value,
-        fqty:         row.querySelector('.fqty-input').value,
-        rate:         row.querySelector('.rate-input').value,
-        gstPercent:   row.querySelector('.gst-select').value,
-        gstValue:     row.querySelector('.gst-value-display').value,
-        taxableValue: row.querySelector('.taxable-value-display').value,
-        totalValue:   row.querySelector('.total-value-display').value,
-        status:       row.querySelector('.status-input').value,
-        remarks: (() => {
-          const sel = row.querySelector('.remarks-select');
-          const txt = row.querySelector('.remarks-other-text');
-          if (!sel) return '';
-          return sel.value === 'Others' ? (txt ? txt.value.trim() : '') : sel.value;
-        })()
-      })).filter(r => r.prod && parseFloat(r.qty) > 0);
-
-      const cInvDate     = dateEl.value;
-      const cInvNo       = cInvNoEl.value;
-      const stockistOpt  = stockistEl.selectedOptions[0];
-      const stockistName = stockistOpt ? stockistOpt.textContent : '';
-      const stockistCode = document.getElementById('stockistCode').value;
-      const area         = document.getElementById('area').value;
-      const team         = document.getElementById('team').value;
-      const noOfBoxes    = noOfBoxesEl.value;
-      const grandTotal   = totalValueDisplay.textContent;
-      const memberID     = memberIDHidden.value || memberIDBadge.textContent;
-      const courierName  = document.getElementById('courierName').value;
-      const podNo        = document.getElementById('podNo').value;
-
-      if (!cInvDate || !cInvNo || !stockistName) {
-        alert('Please fill C.Inv Date, C.Inv No., and Stockist Name.');
-        return null;
+    const byStockist = {};
+    filtered.forEach(d => {
+      const name = d.stockistName || 'Unknown';
+      if (!byStockist[name]) {
+        byStockist[name] = { total: 0, pending: 0, uploaded: 0, value: 0 };
       }
-      if (rows.length === 0) {
-        alert('Please add at least one product with quantity.');
-        return null;
+      byStockist[name].total++;
+      byStockist[name].value += parseFloat(d.returnValue || 0);
+      if (d.rGenDate && d.rGenDate.trim() !== '') {
+        byStockist[name].uploaded++;
+      } else {
+        byStockist[name].pending++;
       }
-      return { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID, courierName, podNo };
-    }
+    });
 
-    async function submitDataToSheet() {
-      const data = collectData();
-      if (!data) return;
-      const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature } = data;
+    const sorted = Object.entries(byStockist).sort((a, b) => b[1].total - a[1].total);
 
-      const dateObj = new Date(cInvDate + 'T00:00:00');
-      const selectedDateFormatted = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
-      const now = new Date();
-      const generatedDateTime = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+    document.getElementById('st-count').textContent = sorted.length;
+    document.getElementById('st-value').textContent = `₹${sorted.reduce((sum, [, v]) => sum + v.value, 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    document.getElementById('st-top').textContent = sorted[0]?.[0] || '—';
 
-      const formData = {
-        action: 'submitReturn',
-        cInvDate: selectedDateFormatted,
-        memberID: data.memberID,
-        cInvNo, noOfBoxes,
-        returnValue: document.getElementById('returnValue').value || '',
-        totalValue: grandTotal,
-        generatedDateTime,
-        stockistName, stockistCode, area, team,
-        courierName: data.courierName,
-        podNo: data.podNo,
-        itemRows: rows.map((r, i) => ({
-          sNo: i + 1, product: r.prod, batch: r.batch,
-          expiry: r.expiry || '', rate: r.qty, qty: r.qty, fqty: r.fqty || '',
-          gstPercent: r.gstPercent, taxableValue: r.taxableValue,
-          gstValue: r.gstValue, totalValue: r.totalValue,
-          status: r.status || '', remarks: r.remarks || ''
-        }))
-      };
+    renderStockistTable(sorted);
+    renderStockistChart(sorted.slice(0, 10));
+  }
 
-      uploadStatus.style.display = 'inline';
-      uploadStatus.textContent = 'Uploading...';
-      submitBtn.disabled = true;
-      submitBtn.style.opacity = '0.5';
+  function renderStockistTable(data) {
+    const tbody = document.getElementById('stockist-table');
+    tbody.innerHTML = '';
+    data.forEach(([name, stats]) => {
+      const row = tbody.insertRow();
+      row.innerHTML = `
+        <td>${name}</td>
+        <td style="text-align:center;">${stats.total}</td>
+        <td style="text-align:center;">${stats.pending}</td>
+        <td style="text-align:center;">${stats.uploaded}</td>
+        <td style="text-align:right;">₹${stats.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+        <td style="text-align:right;">₹${(stats.value / stats.total).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+      `;
+    });
+  }
 
-      try {
-        await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: {'Content-Type':'application/json'}, body: JSON.stringify(formData) });
-        await updateGenDate(data.memberID);
-        setTimeout(() => {
-          uploadStatus.style.display = 'none';
-          submitBtn.style.opacity = '1';
-          submitBtn.disabled = false;
-          showSuccessModal('Data Saved Successfully', `Sales Return ${data.memberID} has been uploaded successfully.`);
-          clearForm();
-          const nextID = getUniqueMemberID();
-          memberIDBadge.textContent = nextID;
-          memberIDHidden.value = nextID;
-        }, 1500);
-      } catch (error) {
-        console.error('Submission failed:', error);
-        uploadStatus.textContent = 'Error! Check console.';
-        uploadStatus.style.color = '#dc3545';
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = '1';
-      }
-    }
-
-    submitBtn.addEventListener('click', submitDataToSheet);
-
-    /* ═══════════════════════════════════════
-       DRAFT FEATURE (Sheet-based)
-       ═══════════════════════════════════════ */
-    function fmtDate(d) {
-      if (!d) return '';
-      const o = new Date(d + 'T00:00:00');
-      return `${String(o.getDate()).padStart(2,'0')}/${String(o.getMonth()+1).padStart(2,'0')}/${o.getFullYear()}`;
-    }
-    function nowDT() {
-      const n = new Date();
-      return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
-    }
-
-    function collectDraftHeader() {
-      const cInvDate     = document.getElementById('date').value;
-      const cInvNo       = document.getElementById('cInvNo').value.trim();
-      const stockistOpt  = stockistEl.selectedOptions[0];
-      const stockistName = stockistOpt ? stockistOpt.textContent.trim() : '';
-      const stockistCode = document.getElementById('stockistCode').value;
-      const area         = document.getElementById('area').value;
-      const team         = document.getElementById('team').value;
-      const courier      = document.getElementById('courierName').value;
-      const pod          = document.getElementById('podNo').value;
-      const boxes        = document.getElementById('noOfBoxes').value;
-      const value        = document.getElementById('returnValue').value;
-      const memberID     = memberIDHidden.value || memberIDBadge.textContent;
-      if (!stockistName) { alert('Please select a Stockist before saving draft.'); return null; }
-      return { memberID, cInvDate: fmtDate(cInvDate), cInvNo, stockistCode, stockistName, area, team, courierName: courier, podNo: pod, noOfBoxes: boxes, returnValue: value };
-    }
-
-    async function saveDraftToSheet() {
-      const header = collectDraftHeader();
-      if (!header) return;
-      const saveDraftBtn = document.getElementById('saveDraft');
-      saveDraftBtn.disabled = true;
-      saveDraftBtn.textContent = '⏳ Saving...';
-      const payload = { action: 'saveDraft', rDraftDate: nowDT(), ...header };
-      try {
-        await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        setTimeout(() => {
-          saveDraftBtn.disabled = false;
-          saveDraftBtn.textContent = '💾 Save Draft';
-          showSuccessModal('Draft Saved Successfully', 'Your draft has been saved. A new Sales Return form is ready.');
-          clearForm();
-          const nextID = getUniqueMemberID();
-          memberIDBadge.textContent = nextID;
-          memberIDHidden.value = nextID;
-        }, 1200);
-      } catch (e) {
-        saveDraftBtn.disabled = false;
-        saveDraftBtn.textContent = '💾 Save Draft';
-      }
-    }
-
-    async function updateGenDate(memberID) {
-      const payload = { action: 'updateGenDate', memberID, rGenDate: nowDT() };
-      try {
-        await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-      } catch(e) { console.warn('Gen date update failed:', e); }
-    }
-
-    /* ── OPEN DRAFT MODAL ── */
-    function openDraftModal() {
-      document.getElementById('draftModal').style.display = 'flex';
-      loadDraftList();
-    }
-    function closeDraftModal() {
-      document.getElementById('draftModal').style.display = 'none';
-    }
-
-    /* ── SUCCESS MODAL ── */
-    function showSuccessModal(title, message) {
-      document.getElementById('successTitle').textContent = title;
-      document.getElementById('successMessage').textContent = message;
-      document.getElementById('successModal').style.display = 'flex';
-      setTimeout(() => {
-        closeSuccessModal();
-      }, 3000);
-    }
-    function closeSuccessModal() {
-      document.getElementById('successModal').style.display = 'none';
-    }
-
-    async function loadDraftList() {
-      const wrap = document.getElementById('draftListWrap');
-      wrap.innerHTML = '<p style="color:#888;text-align:center;margin-top:30px;">⏳ Loading drafts...</p>';
-      try {
-        const res  = await fetch(scriptUrl + '?action=getDrafts');
-        const json = await res.json();
-        window._cachedDrafts = json.drafts || [];
-        renderDraftList(window._cachedDrafts);
-      } catch(e) {
-        wrap.innerHTML = '<p style="color:#c00;text-align:center;margin-top:30px;">❌ Failed to load drafts. Check sheet access.</p>';
-      }
-    }
-
-    function renderDraftList(drafts) {
-      const wrap  = document.getElementById('draftListWrap');
-      const query = (document.getElementById('draftSearchBox').value || '').toLowerCase();
-
-      // Only show entries that have NOT been uploaded (no rGenDate)
-      const pendingDrafts = drafts.filter(d => !d.rGenDate);
-
-      const filtered = query
-        ? pendingDrafts.filter(d =>
-            (d.memberID||'').toLowerCase().includes(query) ||
-            (d.stockistName||'').toLowerCase().includes(query) ||
-            (d.cInvNo||'').toLowerCase().includes(query)
-          )
-        : pendingDrafts;
-
-      if (!filtered.length) {
-        wrap.innerHTML = '<p style="color:#888;text-align:center;margin-top:30px;">No pending drafts found.</p>';
-        return;
-      }
-
-      const cols = ['SR Ref No.', 'Draft Date', 'C.Inv No.', 'Stockist', 'Area / State', 'Boxes', 'Value (₹)', ''];
-      let html = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead><tr>${cols.map(c => `<th style="background:linear-gradient(135deg,#0056b3,#003d82);color:#fff;padding:8px 10px;white-space:nowrap;font-weight:600;letter-spacing:.4px;">${c}</th>`).join('')}</tr></thead>
-        <tbody>`;
-
-      filtered.forEach((d, i) => {
-        const bg = i % 2 === 0 ? '#fff' : '#f7f9fc';
-        const areaState = [d.area, d.team].filter(Boolean).join(' / ');
-        
-        // Format draft date to DD/MM/YYYY
-        let draftDateFormatted = '';
-        if (d.rDraftDate) {
-          try {
-            const parsed = new Date(d.rDraftDate);
-            draftDateFormatted = `${String(parsed.getDate()).padStart(2,'0')}/${String(parsed.getMonth()+1).padStart(2,'0')}/${parsed.getFullYear()}`;
-          } catch(e) {
-            draftDateFormatted = d.rDraftDate;
+  function renderStockistChart(data) {
+    destroyChart('stockistChart');
+    const ctx = document.getElementById('stockistChart').getContext('2d');
+    chartInstances.stockistChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(([name]) => name.substring(0, 15)),
+        datasets: [
+          {
+            label: 'Pending',
+            data: data.map(([, v]) => v.pending),
+            backgroundColor: '#FF8904'
+          },
+          {
+            label: 'Uploaded',
+            data: data.map(([, v]) => v.uploaded),
+            backgroundColor: '#217346'
           }
-        }
-        
-        html += `<tr style="background:${bg};">
-          <td style="padding:7px 10px;font-weight:700;color:#0056b3;white-space:nowrap;">${d.memberID||''}</td>
-          <td style="padding:7px 8px;white-space:nowrap;">${draftDateFormatted}</td>
-          <td style="padding:7px 8px;">${d.cInvNo||''}</td>
-          <td style="padding:7px 8px;">${d.stockistName||''}</td>
-          <td style="padding:7px 8px;white-space:nowrap;">${areaState}</td>
-          <td style="padding:7px 8px;text-align:right;">${d.noOfBoxes||''}</td>
-          <td style="padding:7px 8px;text-align:right;">${d.returnValue||''}</td>
-          <td style="padding:7px 8px;text-align:center;">
-            <button onclick='restoreDraft(${JSON.stringify(d).replace(/'/g,"&#39;")})' style="font-size:11px;padding:4px 12px;background:#0056b3;color:#fff;border:0;border-radius:6px;cursor:pointer;white-space:nowrap;">📂 Open</button>
-          </td>
-        </tr>`;
-      });
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { x: { stacked: true }, y: { stacked: true } },
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
 
-      html += '</tbody></table>';
-      wrap.innerHTML = html;
-    }
+  // ═════════════════════════════════════════════════════════════════
+  // REPORT 3: AREA BREAKDOWN
+  // ═════════════════════════════════════════════════════════════════
 
-    document.addEventListener('DOMContentLoaded', function () {
-      const draftSearchBox = document.getElementById('draftSearchBox');
-      if (draftSearchBox) {
-        draftSearchBox.addEventListener('input', async function () {
-          if (window._cachedDrafts) {
-            renderDraftList(window._cachedDrafts);
-          } else {
-            await loadDraftList();
-          }
-        });
+  function updateArea() {
+    const byArea = {};
+    allDrafts.forEach(d => {
+      const area = d.area || 'Unknown';
+      if (!byArea[area]) {
+        byArea[area] = { total: 0, pending: 0, uploaded: 0, boxes: 0, value: 0 };
+      }
+      byArea[area].total++;
+      byArea[area].boxes += parseInt(d.noOfBoxes || 0);
+      byArea[area].value += parseFloat(d.returnValue || 0);
+      if (d.rGenDate && d.rGenDate.trim() !== '') {
+        byArea[area].uploaded++;
+      } else {
+        byArea[area].pending++;
       }
     });
 
-    function restoreDraft(d) {
-      closeDraftModal();
-      memberIDBadge.textContent = d.memberID;
-      memberIDHidden.value      = d.memberID;
+    const sorted = Object.entries(byArea).sort((a, b) => b[1].total - a[1].total);
 
-      if (d.cInvDate) {
-        const parts = d.cInvDate.split('/');
-        if (parts.length === 3) document.getElementById('date').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
-      }
-      document.getElementById('cInvNo').value       = d.cInvNo       || '';
-      document.getElementById('noOfBoxes').value    = d.noOfBoxes    || '';
-      document.getElementById('returnValue').value  = d.returnValue  || '';
-      document.getElementById('courierName').value  = d.courierName  || '';
-      document.getElementById('podNo').value        = d.podNo        || '';
+    document.getElementById('ar-count').textContent = sorted.length;
+    document.getElementById('ar-boxes').textContent = sorted.reduce((sum, [, v]) => sum + v.boxes, 0);
+    const uploadRate = sorted.reduce((sum, [, v]) => sum + v.uploaded, 0) / allDrafts.length * 100;
+    document.getElementById('ar-rate').textContent = `${Math.round(uploadRate)}%`;
 
-      function trySetStockist(attempts) {
-        const opt = Array.from(stockistEl.options).find(o => o.value === d.stockistCode || o.textContent.trim() === d.stockistName);
-        if (opt) {
-          stockistEl.value = opt.value;
-          stockistEl.dispatchEvent(new Event('change'));
-        } else if (attempts > 0) {
-          setTimeout(() => trySetStockist(attempts - 1), 300);
-        }
-      }
-      trySetStockist(10);
+    renderAreaTable(sorted);
+    renderAreaChart(sorted);
+  }
 
-      uploadStatus.style.display = 'inline';
-      uploadStatus.textContent   = `📂 Draft restored: ${d.memberID}`;
-      uploadStatus.style.color   = '#5b4fcf';
-    }
-
-    document.getElementById('saveDraft').addEventListener('click', saveDraftToSheet);
-    document.getElementById('openDraft').addEventListener('click', openDraftModal);
-    document.getElementById('recoverBtn').addEventListener('click', recoverFromLocalStorage);
-    document.getElementById('downloadBackup').addEventListener('click', downloadBackupExcel);
-    window.restoreDraft    = restoreDraft;
-    window.closeDraftModal = closeDraftModal;
-    window.closeSuccessModal = closeSuccessModal;
-
-    window.addEventListener('DOMContentLoaded', () => {
-      dateEl.value = new Date().toISOString().split('T')[0];
-      newRow();
-      updateRowCountBadge();
-      updateRecoverButtonVisibility();
-      saveDraft(); // Initial save
+  function renderAreaTable(data) {
+    const tbody = document.getElementById('area-table');
+    tbody.innerHTML = '';
+    data.forEach(([area, stats]) => {
+      const uploadRate = Math.round(stats.uploaded / stats.total * 100);
+      const row = tbody.insertRow();
+      row.innerHTML = `
+        <td>${area}</td>
+        <td style="text-align:center;">${stats.total}</td>
+        <td style="text-align:center;"><span class="badge pending">${stats.pending}</span></td>
+        <td style="text-align:center;">${uploadRate}%</td>
+        <td style="text-align:right;">${stats.boxes}</td>
+        <td style="text-align:right;">₹${stats.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+      `;
     });
+  }
 
-    /* ── LISTEN FOR CHANGES AND SAVE ── */
-    ['date', 'cInvNo', 'stockist', 'courierName', 'podNo', 'noOfBoxes', 'returnValue'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.addEventListener('change', saveDraft);
-        el.addEventListener('input', saveDraft);
+  function renderAreaChart(data) {
+    destroyChart('areaChart');
+    const ctx = document.getElementById('areaChart').getContext('2d');
+    chartInstances.areaChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(([name]) => name.substring(0, 20)),
+        datasets: [
+          { label: 'Pending', data: data.map(([, v]) => v.pending), backgroundColor: '#FF8904' },
+          { label: 'Uploaded', data: data.map(([, v]) => v.uploaded), backgroundColor: '#217346' }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { x: { stacked: true }, y: { stacked: true } },
+        plugins: { legend: { position: 'bottom' } }
       }
     });
-    itemsTable.addEventListener('change', saveDraft);
-    itemsTable.addEventListener('input', saveDraft);
-    const searchInput    = document.getElementById('stockistSearch');
-    let originalOptions  = Array.from(stockistEl.options);
+  }
 
-    window._rebuildSearchOptions = function () {
-      originalOptions = Array.from(stockistEl.options);
-    };
+  // ═════════════════════════════════════════════════════════════════
+  // REPORT 4: VALUE ANALYSIS
+  // ═════════════════════════════════════════════════════════════════
 
-    searchInput.addEventListener('input', function () {
-      const keyword = this.value.toLowerCase();
-      stockistEl.innerHTML = '';
-      originalOptions.forEach(opt => {
-        if (opt.text.toLowerCase().includes(keyword) || opt.value === '') {
-          stockistEl.appendChild(opt.cloneNode(true));
-        }
-      });
-      stockistEl.size = Math.min(8, stockistEl.options.length);
+  function updateValue() {
+    const total = allDrafts.reduce((sum, d) => sum + parseFloat(d.returnValue || 0), 0);
+    const pending = allDrafts.filter(d => !d.rGenDate || d.rGenDate.trim() === '');
+    const pendingValue = pending.reduce((sum, d) => sum + parseFloat(d.returnValue || 0), 0);
+    const uploadedValue = total - pendingValue;
+
+    document.getElementById('va-total').textContent = `₹${total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    document.getElementById('va-pending').textContent = `₹${pendingValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    document.getElementById('va-uploaded').textContent = `₹${uploadedValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    document.getElementById('va-avg').textContent = `₹${(total / allDrafts.length).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+
+    renderValueTable();
+    renderValueChart(pendingValue, uploadedValue);
+  }
+
+  function renderValueTable() {
+    const byStockist = {};
+    allDrafts.forEach(d => {
+      const name = d.stockistName || 'Unknown';
+      if (!byStockist[name]) {
+        byStockist[name] = { total: 0, value: 0, pendingValue: 0 };
+      }
+      byStockist[name].total++;
+      byStockist[name].value += parseFloat(d.returnValue || 0);
+      if (!d.rGenDate || d.rGenDate.trim() === '') {
+        byStockist[name].pendingValue += parseFloat(d.returnValue || 0);
+      }
     });
-    stockistEl.addEventListener('change', () => { stockistEl.size = 1; });
-    searchInput.addEventListener('blur',  () => setTimeout(() => { stockistEl.size = 1; }, 200));
 
-    /* ── CLEAR FORM FUNCTION ── */
-    function clearForm() {
-      // Clear all input fields
-      document.getElementById('date').value = new Date().toISOString().split('T')[0];
-      document.getElementById('cInvNo').value = '';
-      document.getElementById('stockist').value = '';
-      document.getElementById('stockistCode').value = '';
-      document.getElementById('area').value = '';
-      document.getElementById('team').value = '';
-      document.getElementById('noOfBoxes').value = '';
-      document.getElementById('returnValue').value = '';
-      document.getElementById('courierName').value = '';
-      document.getElementById('podNo').value = '';
+    const sorted = Object.entries(byStockist).sort((a, b) => b[1].value - a[1].value);
+    const tbody = document.getElementById('value-table');
+    tbody.innerHTML = '';
+    sorted.forEach(([name, stats]) => {
+      const row = tbody.insertRow();
+      row.innerHTML = `
+        <td>${name}</td>
+        <td style="text-align:center;">${stats.total}</td>
+        <td style="text-align:right;">₹${stats.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+        <td style="text-align:right;">₹${stats.pendingValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+        <td style="text-align:right;">₹${(stats.value / stats.total).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+      `;
+    });
+  }
+
+  function renderValueChart(pending, uploaded) {
+    destroyChart('valueChart');
+    const ctx = document.getElementById('valueChart').getContext('2d');
+    chartInstances.valueChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: [`Pending (₹${pending.toLocaleString('en-IN', { maximumFractionDigits: 0 })})`, `Uploaded (₹${uploaded.toLocaleString('en-IN', { maximumFractionDigits: 0 })})`],
+        datasets: [{
+          data: [pending, uploaded],
+          backgroundColor: ['#FF8904', '#217346'],
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // REPORT 5: AGING
+  // ═════════════════════════════════════════════════════════════════
+
+  function updateAging() {
+    const pending = allDrafts.filter(d => !d.rGenDate || d.rGenDate.trim() === '');
+    const critical = pending.filter(d => calcDaysPending(d.rDraftDate) > 14);
+    const high = pending.filter(d => {
+      const days = calcDaysPending(d.rDraftDate);
+      return days > 7 && days <= 14;
+    });
+    const medium = pending.filter(d => {
+      const days = calcDaysPending(d.rDraftDate);
+      return days >= 3 && days <= 7;
+    });
+    const fresh = pending.filter(d => calcDaysPending(d.rDraftDate) < 3);
+
+    document.getElementById('ag-critical').textContent = critical.length;
+    document.getElementById('ag-high').textContent = high.length;
+    document.getElementById('ag-medium').textContent = medium.length;
+    document.getElementById('ag-fresh').textContent = fresh.length;
+
+    renderAgingTable(pending);
+    renderAgingChart(fresh.length, medium.length, high.length, critical.length);
+  }
+
+  function renderAgingTable(data) {
+    const sorted = data.sort((a, b) => calcDaysPending(b.rDraftDate) - calcDaysPending(a.rDraftDate));
+    const tbody = document.getElementById('aging-table');
+    tbody.innerHTML = '';
+    sorted.forEach(d => {
+      const days = calcDaysPending(d.rDraftDate);
+      let priority = '🟢 Fresh';
+      if (days > 14) priority = '🔴 Critical';
+      else if (days > 7) priority = '🟠 High';
+      else if (days >= 3) priority = '🟡 Medium';
       
-      // Clear items table
-      itemsTable.innerHTML = '';
-      newRow();
-      updateRowCountBadge();
-      updateGrandTotal();
-      
-      // Clear localStorage draft
-      localStorage.removeItem('SR_DRAFT');
-      updateRecoverButtonVisibility();
-      
-      // Hide status message
-      uploadStatus.style.display = 'none';
+      const row = tbody.insertRow();
+      row.innerHTML = `
+        <td style="font-weight:700;color:var(--primary);">${d.memberID || ''}</td>
+        <td style="text-align:center;"><strong>${days}</strong></td>
+        <td>${formatDate(d.rDraftDate)}</td>
+        <td>${d.stockistName || ''}</td>
+        <td style="text-align:right;">₹${parseFloat(d.returnValue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+        <td><span class="badge ${days > 14 ? 'critical' : days > 7 ? 'pending' : ''}">${priority}</span></td>
+      `;
+    });
+  }
+
+  function renderAgingChart(fresh, medium, high, critical) {
+    destroyChart('agingChart');
+    const ctx = document.getElementById('agingChart').getContext('2d');
+    chartInstances.agingChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Fresh (<3d)', 'Medium (3-7d)', 'High (8-14d)', 'Critical (>14d)'],
+        datasets: [{
+          label: 'Count',
+          data: [fresh, medium, high, critical],
+          backgroundColor: ['#217346', '#FF8904', '#FF6B35', '#dc3545'],
+          borderColor: '#fff',
+          borderWidth: 1
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // REPORT 6: TRENDS
+  // ═════════════════════════════════════════════════════════════════
+
+  function updateTrends() {
+    const byDate = {};
+    allDrafts.forEach(d => {
+      const date = d.rDraftDate || '';
+      if (!byDate[date]) byDate[date] = { total: 0, uploaded: 0 };
+      byDate[date].total++;
+      if (d.rGenDate && d.rGenDate.trim() !== '') byDate[date].uploaded++;
+    });
+
+    const dates = Object.keys(byDate).sort();
+    const daysData = dates.length;
+    const avgDaily = allDrafts.length / daysData;
+    const peak = Object.entries(byDate).sort((a, b) => b[1].total - a[1].total)[0];
+
+    document.getElementById('tr-days').textContent = daysData;
+    document.getElementById('tr-daily').textContent = Math.round(avgDaily);
+    document.getElementById('tr-peak').textContent = peak ? formatDate(peak[0]) + ` (${peak[1].total})` : '—';
+
+    renderTrendsCharts(dates, byDate);
+  }
+
+  function renderTrendsCharts(dates, byDate) {
+    destroyChart('trendsLineChart');
+    destroyChart('trendsUploadChart');
+
+    const ctx1 = document.getElementById('trendsLineChart').getContext('2d');
+    chartInstances.trendsLineChart = new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: dates.map(formatDate),
+        datasets: [{
+          label: 'Submissions',
+          data: dates.map(d => byDate[d].total),
+          borderColor: '#0056b3',
+          backgroundColor: 'rgba(0, 86, 179, 0.1)',
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    const ctx2 = document.getElementById('trendsUploadChart').getContext('2d');
+    chartInstances.trendsUploadChart = new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: dates.map(formatDate),
+        datasets: [{
+          label: 'Upload Rate (%)',
+          data: dates.map(d => {
+            const total = byDate[d].total;
+            return total > 0 ? Math.round(byDate[d].uploaded / total * 100) : 0;
+          }),
+          borderColor: '#217346',
+          backgroundColor: 'rgba(33, 115, 70, 0.1)',
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+  // HELPERS
+  // ═════════════════════════════════════════════════════════════════
+
+  function filterData(data, query, dateFrom, dateTo) {
+    let filtered = data;
+    if (query) {
+      filtered = filtered.filter(d =>
+        (d.memberID || '').toLowerCase().includes(query) ||
+        (d.cInvNo || '').toLowerCase().includes(query) ||
+        (d.stockistName || '').toLowerCase().includes(query)
+      );
     }
-
-    /* ── AUTO-SAVE DRAFT (localStorage, power-cut safe) - Every 2 minutes ── */
-    function saveDraft() {
-      const draft = {
-        memberID:    memberIDHidden?.value || memberIDBadge?.textContent || '',
-        date:        document.getElementById('date')?.value        || '',
-        cInvNo:      document.getElementById('cInvNo')?.value      || '',
-        stockist:    document.getElementById('stockist')?.value    || '',
-        courierName: document.getElementById('courierName')?.value || '',
-        podNo:       document.getElementById('podNo')?.value       || '',
-        noOfBoxes:   document.getElementById('noOfBoxes')?.value   || '',
-        returnValue: document.getElementById('returnValue')?.value || '',
-        items: [],
-        lastSaved: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
-      };
-      document.querySelectorAll('#itemsTable tbody tr').forEach(row => {
-        draft.items.push({
-          prod:          row.querySelector('.product-select')?.value    || '',
-          batch:         row.querySelector('.batch-input')?.value       || '',
-          expiry:        row.querySelector('.expiry-input')?.value      || '',
-          qty:           row.querySelector('.qty-input')?.value         || '',
-          fqty:          row.querySelector('.fqty-input')?.value        || '',
-          rate:          row.querySelector('.rate-input')?.value        || '',
-          gst:           row.querySelector('.gst-select')?.value        || '',
-          status:        row.querySelector('.status-input')?.value      || '',
-          remarksSelect: row.querySelector('.remarks-select')?.value    || '',
-          remarksOther:  row.querySelector('.remarks-other-text')?.value|| ''
-        });
+    if (dateFrom || dateTo) {
+      filtered = filtered.filter(d => {
+        const draftDate = parseExcelDate(d.rDraftDate);
+        if (!draftDate) return false;
+        if (dateFrom && draftDate < new Date(dateFrom + 'T00:00:00')) return false;
+        if (dateTo && draftDate > new Date(dateTo + 'T23:59:59')) return false;
+        return true;
       });
-      localStorage.setItem('SR_DRAFT', JSON.stringify(draft));
-      updateRecoverButtonVisibility();
-      updateLastSaveTime(draft.lastSaved);
     }
-    
-    function updateLastSaveTime(timestamp) {
-      const timeEl = document.getElementById('lastSaveTime');
-      if (timeEl && timestamp) {
-        timeEl.textContent = `⏱ Auto-saved at ${timestamp}`;
-      }
-    }
-    
-    // Auto-save every 2 minutes
-    setInterval(saveDraft, 120000);
-    
-    /* ── RECOVER FROM LOCAL STORAGE ── */
-    function recoverFromLocalStorage() {
-      const saved = localStorage.getItem('SR_DRAFT');
-      if (!saved) {
-        alert('No saved data found.');
-        return;
-      }
-      
-      let data;
-      try {
-        data = JSON.parse(saved);
-      } catch (e) {
-        alert('Saved backup data is corrupted and could not be read.');
-        console.error('SR_DRAFT parse error:', e);
-        return;
-      }
+    return filtered;
+  }
 
-      if (data.memberID) {
-        memberIDBadge.textContent = data.memberID;
-        memberIDHidden.value      = data.memberID;
+  function parseExcelDate(dateStr) {
+    if (!dateStr || dateStr.trim() === '') return null;
+    try {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
       }
-      document.getElementById('date').value        = data.date        || '';
-      document.getElementById('cInvNo').value      = data.cInvNo      || '';
-      document.getElementById('courierName').value = data.courierName || '';
-      document.getElementById('podNo').value       = data.podNo       || '';
-      document.getElementById('noOfBoxes').value   = data.noOfBoxes   || '';
-      document.getElementById('returnValue').value = data.returnValue  || '';
+      return new Date(dateStr);
+    } catch (e) {
+      return null;
+    }
+  }
 
-      function applyStockist(attempts) {
-        const opt = Array.from(stockistEl.options).find(o => o.value === data.stockist);
-        if (opt) {
-          stockistEl.value = data.stockist;
-          stockistEl.dispatchEvent(new Event('change'));
-        } else if (attempts > 0) {
-          // stockist list may still be loading from the sheet - retry shortly
-          setTimeout(() => applyStockist(attempts - 1), 300);
-        }
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr.trim() === '') return '—';
+    try {
+      const d = parseExcelDate(dateStr);
+      if (!d) return dateStr;
+      return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: '2-digit' });
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  function calcDaysPending(dateStr) {
+    if (!dateStr || dateStr.trim() === '') return 0;
+    try {
+      const d = parseExcelDate(dateStr);
+      if (!d) return 0;
+      const today = new Date();
+      return Math.floor((today - d) / (1000 * 60 * 60 * 24));
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function sortTable(tableId, colIdx) {
+    const table = document.querySelector(`#${tableId}`).closest('table');
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const isAsc = table.dataset.sortCol === colIdx && table.dataset.sortAsc === 'true';
+    
+    rows.sort((a, b) => {
+      let aVal = a.cells[colIdx].textContent;
+      let bVal = b.cells[colIdx].textContent;
+      const numA = parseFloat(aVal.replace(/[^0-9.-]/g, ''));
+      const numB = parseFloat(bVal.replace(/[^0-9.-]/g, ''));
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return isAsc ? numB - numA : numA - numB;
       }
-      applyStockist(10);
+      return isAsc ? bVal.localeCompare(aVal) : aVal.localeCompare(bVal);
+    });
 
-      itemsTable.innerHTML = '';
-      (data.items || []).forEach(item => {
-        newRow();
-        const row = itemsTable.rows[itemsTable.rows.length - 1];
-        const set = (cls, val) => { const el = row.querySelector(cls); if (el) el.value = val; };
-        set('.product-select',   item.prod   || '');
-        set('.batch-input',      item.batch  || '');
-        set('.expiry-input',     item.expiry || '');
-        set('.qty-input',        item.qty    || '1');
-        set('.fqty-input',       item.fqty   || '0');
-        set('.rate-input',       item.rate   || '');
-        set('.gst-select',       item.gst    || '5');
-        set('.status-input',     item.status || '');
-        const remarksSelect = row.querySelector('.remarks-select');
-        if (remarksSelect) { remarksSelect.value = item.remarksSelect || ''; remarksSelect.dispatchEvent(new Event('change')); }
-        const remarksOther = row.querySelector('.remarks-other-text');
-        if (remarksOther) remarksOther.value = item.remarksOther || '';
-        updateRowCalculations(row);
-      });
-      if (!data.items || data.items.length === 0) newRow();
-      updateRowCountBadge();
-      updateSNoAndGrandTotal();
-      
-      uploadStatus.style.display = 'inline';
-      uploadStatus.textContent   = `📂 Data recovered from local backup (Saved: ${data.lastSaved || 'Unknown'})`;
-      uploadStatus.style.color   = '#5b4fcf';
-    }
-    
-    /* ── DOWNLOAD BACKUP AS EXCEL ── */
-    function downloadBackupExcel() {
-      const data = collectData();
-      if (!data) return;
-      const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal } = data;
-      
-      const dateObj = new Date(cInvDate + 'T00:00:00');
-      const selectedDateFormatted = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
-      const now = new Date();
-      const backupDateTime = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      
-      const excelData = [
-        ["LOCAL BACKUP - NOT YET UPLOADED TO GOOGLE SHEET"],
-        ["Backup Time", backupDateTime],
-        [""],
-        ["SR Ref No.", data.memberID],
-        ["C.Inv Date", selectedDateFormatted],
-        ["C.Inv No.", cInvNo],
-        ["Stockist", stockistName],
-        ["Stockist Code", stockistCode],
-        ["Area", area],
-        ["Team", team],
-        ["No. of Boxes", noOfBoxes],
-        ["Total Value", grandTotal],
-        [""],
-        ["S.No", "Product", "Batch", "Expiry", "Qty", "FQty", "Rate", "GST %", "Taxable Val", "GST Val", "Total Val", "Status", "Remarks"]
-      ];
-      
-      rows.forEach((r, i) => {
-        excelData.push([
-          i+1, r.prod, r.batch, r.expiry || '', r.qty, r.fqty, r.rate, r.gstPercent, 
-          r.taxableValue, r.gstValue, r.totalValue, r.status, r.remarks
-        ]);
-      });
-      
-      const ws = XLSX.utils.aoa_to_sheet(excelData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Backup');
-      XLSX.writeFile(wb, `${stockistName.replace(/\s+/g,'_')}_Backup_${selectedDateFormatted}.xlsx`);
-      
-      uploadStatus.style.display = 'inline';
-      uploadStatus.textContent = '📥 Backup downloaded successfully';
-      uploadStatus.style.color = '#f39c12';
-      setTimeout(() => { uploadStatus.style.display = 'none'; }, 3000);
-    }
-    
-    /* ── CHECK IF RECOVERY DATA EXISTS ── */
-    function updateRecoverButtonVisibility() {
-      const recoverBtn = document.getElementById('recoverBtn');
-      if (!recoverBtn) return;
-      const saved = localStorage.getItem('SR_DRAFT');
-      recoverBtn.style.display = saved ? 'inline-block' : 'none';
-    }
+    rows.forEach(row => table.querySelector('tbody').appendChild(row));
+    table.dataset.sortCol = colIdx;
+    table.dataset.sortAsc = !isAsc;
+  }
 
-    /* ── RESTORE DRAFT AFTER RESTART ── */
-    // Feature removed - auto-save to localStorage instead with manual recovery option
-  </script>
+  function switchReport(name) {
+    document.querySelectorAll('.report-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function clearFiltersOverview() {
+    document.getElementById('ov-search').value = '';
+    document.getElementById('ov-dateFrom').value = '';
+    document.getElementById('ov-dateTo').value = '';
+    updateOverview();
+  }
+
+  function clearFiltersStockist() {
+    document.getElementById('st-search').value = '';
+    updateStockist();
+  }
+
+  function destroyChart(id) {
+    if (chartInstances[id]) {
+      chartInstances[id].destroy();
+      delete chartInstances[id];
+    }
+  }
+
+  function showAlert(msg, type = 'error') {
+    const el = document.getElementById('alert');
+    el.textContent = msg;
+    el.className = 'alert show ' + type;
+  }
+
+  function hideAlert() {
+    document.getElementById('alert').classList.remove('show');
+  }
+
+  function downloadAllReports() {
+    const allData = [];
+    allData.push(['PRISTINE PEARL PHARMA — COMPREHENSIVE ANALYTICS EXPORT']);
+    allData.push(['Generated:', new Date().toLocaleString('en-IN')]);
+    allData.push(['']);
+    allData.push(['OVERVIEW SUMMARY']);
+    allData.push(['Total Records', allDrafts.length]);
+    allData.push(['Pending', allDrafts.filter(d => !d.rGenDate || d.rGenDate.trim() === '').length]);
+    allData.push(['Uploaded', allDrafts.filter(d => d.rGenDate && d.rGenDate.trim() !== '').length]);
+    allData.push(['']);
+    allData.push(['ALL RECORDS']);
+    allData.push(['SR Ref No.', 'Draft Date', 'Upload Date', 'Stockist', 'Area', 'Value (₹)', 'Status']);
+    
+    allDrafts.forEach(d => {
+      const status = d.rGenDate && d.rGenDate.trim() !== '' ? 'Uploaded' : 'Pending';
+      allData.push([
+        d.memberID || '',
+        d.rDraftDate || '',
+        d.rGenDate || '',
+        d.stockistName || '',
+        d.area || '',
+        d.returnValue || '',
+        status
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(allData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Analytics');
+    XLSX.writeFile(wb, `SR_Analytics_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    showAlert('All reports downloaded', 'success');
+    setTimeout(hideAlert, 3000);
+  }
+</script>
 
 </body>
 </html>
