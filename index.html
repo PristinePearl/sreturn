@@ -357,15 +357,14 @@
 
     #submitToSheet  { background: var(--orange) !important; box-shadow: 0 3px 8px rgba(255,137,4,.25) !important; }
     #submitToSheet:hover { background: #d97200 !important; }
-    #downloadXlsx  { background: var(--green) !important; box-shadow: 0 3px 8px rgba(33,115,70,.25) !important; }
-    #downloadXlsx:hover { background: #185a35 !important; }
-    #generate      { background: #607346 !important; }
-    #generate:hover{ background: #4b5c37 !important; }
-    #sendMail      { background: var(--primary-light) !important; }
-    #viewReport    { background: #6c42c4 !important; box-shadow: 0 3px 8px rgba(108,66,196,.25) !important; }
-    #viewReport:hover { background: #5533a0 !important; }
     #addRow        { background: var(--green); box-shadow: 0 3px 8px rgba(33,115,70,.2); }
     #addRow:hover  { background: #185a35; }
+    #saveDraft     { background: #5b4fcf !important; box-shadow: 0 3px 8px rgba(91,79,207,.25) !important; }
+    #saveDraft:hover { background: #4338a0 !important; }
+    #openDraft     { background: #fff !important; border: 1.5px solid #5b4fcf !important; color: #5b4fcf !important; box-shadow: none !important; }
+    #openDraft:hover { background: #f3f0ff !important; color: #4338a0 !important; transform: none; }
+    #recoverBtn { border-color: #e74c3c !important; color: #e74c3c !important; }
+    #recoverBtn:hover { background: #fadbd8 !important; color: #c0392b !important; transform: none; }
 
     /* ── STATUS MESSAGE ── */
     .status-message {
@@ -500,6 +499,11 @@
             <input id="noOfBoxes" type="number" min="0" placeholder="Approx. boxes returned">
           </div>
 
+          <div>
+            <label for="returnValue">Value (₹)</label>
+            <input id="returnValue" type="number" min="0" step="0.01" placeholder="Approx. return value">
+          </div>
+
           <!-- hidden nature field kept for data compatibility -->
           <div style="display:none">
             <select id="returnNature" disabled><option value="Sales Return">Sales Return</option></select>
@@ -576,52 +580,78 @@
   <!-- STICKY BOTTOM ACTION BAR -->
   <div class="bottom-action-bar">
     <span id="uploadStatus" class="status-message" style="display:none;margin-right:auto;"></span>
-    <button id="viewReport">📋 View Report</button>
-    <button id="generate" style="display:none;">👁 Preview</button>
-    <button id="sendMail" style="display:none;">✉ Send Mail</button>
-    <button id="downloadXlsx" style="display:none;">⬇ Download Excel</button>
+    <span id="lastSaveTime" style="font-size:11px;color:#999;margin-right:auto;font-weight:500;">⏱ Not saved yet</span>
+    <button id="recoverBtn" class="ghost small" style="display:none;border-color:#e74c3c;color:#e74c3c;margin-right:4px;">🔄 Recover</button>
+    <button id="downloadBackup" class="ghost small" style="border-color:#f39c12;color:#f39c12;margin-right:4px;">⬇ Backup</button>
+    <button id="openDraft" class="ghost small">📂 Open Draft</button>
+    <button id="saveDraft">💾 Save Draft</button>
     <button id="submitToSheet">⬆ Upload</button>
   </div>
+
+  <!-- DRAFT MODAL -->
+  <div id="draftModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;width:92%;max-width:820px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#0056b3,#003d82);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-weight:700;font-size:15px;letter-spacing:.4px;">📂 Open Draft</span>
+        <button onclick="closeDraftModal()" style="background:rgba(255,255,255,.2);padding:4px 10px;font-size:13px;border-radius:6px;box-shadow:none;">✕</button>
+      </div>
+      <div style="padding:12px 16px;border-bottom:1px solid #eee;display:flex;gap:8px;align-items:center;">
+        <input id="draftSearchBox" type="text" placeholder="🔍 Search by SR Ref, Stockist, Invoice No..." style="flex:1;padding:8px 12px;border-radius:7px;border:1.5px solid #dde3ea;font-size:13px;">
+        <button onclick="loadDraftList()" style="padding:8px 14px;font-size:12px;">🔄 Refresh</button>
+      </div>
+      <div id="draftListWrap" style="overflow-y:auto;flex:1;padding:12px 16px;">
+        <p style="color:#888;text-align:center;margin-top:30px;">Click Refresh to load drafts.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS DIALOGUE BOX -->
+  <div id="successModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;width:92%;max-width:450px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#217346,#185a35);color:#fff;padding:24px 28px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">✅</div>
+        <h2 id="successTitle" style="margin:0;font-size:20px;font-weight:700;letter-spacing:.4px;">Success!</h2>
+      </div>
+      <div style="padding:24px 28px;text-align:center;flex:1;">
+        <p id="successMessage" style="margin:0;font-size:15px;color:#666;line-height:1.6;">Your data has been saved successfully.</p>
+      </div>
+      <div style="padding:16px 28px;text-align:center;border-top:1px solid #eee;">
+        <button onclick="closeSuccessModal()" style="padding:10px 28px;font-size:13px;background:#217346;color:#fff;border:0;border-radius:8px;cursor:pointer;font-weight:600;">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
   <script>
     // ** IMPORTANT: Replace this with your actual Google Apps Script Web App URL **
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbziC3U1Yds6bbc6XkliQdpctIoajspM1upHOUFQ5_V9t0yIkSkuJt_XyaxXG1b6ac-H/exec';
-    const stockistEl = document.getElementById('stockist');
-    const submitBtn = document.getElementById('submitToSheet');
-    const uploadStatus = document.getElementById('uploadStatus');
-    const downloadXlsxBtn = document.getElementById('downloadXlsx');
-    const sendMailBtn = document.getElementById('sendMail'); 
-    const formFields = document.querySelectorAll('input, select, textarea');
+    const stockistEl       = document.getElementById('stockist');
+    const submitBtn        = document.getElementById('submitToSheet');
+    const uploadStatus     = document.getElementById('uploadStatus');
     const totalValueDisplay = document.getElementById('totalValueDisplay');
-    const returnNatureEl = document.getElementById('returnNature'); // New element reference
-    stockistEl.addEventListener('change', (e)=>{
+    const returnNatureEl   = document.getElementById('returnNature');
+
+    stockistEl.addEventListener('change', () => {
       const sel = stockistEl.selectedOptions[0];
-      document.getElementById('stockistCode').value = sel ? sel.value : '';
-      document.getElementById('area').value = sel ? sel.dataset.area || '' : '';
-      document.getElementById('team').value = sel ? sel.dataset.team || '' : '';
+      document.getElementById('stockistCode').value = sel ? sel.value       : '';
+      document.getElementById('area').value         = sel ? sel.dataset.area || '' : '';
+      document.getElementById('team').value         = sel ? sel.dataset.team || '' : '';
     });
 
-    /* ── FETCH STOCKIST LIST FROM GOOGLE SHEET ── */
+    /* ── FETCH STOCKIST LIST ── */
     (function loadStockists() {
-      const SHEET_ID = '1EYY6jkJ5DJ7RgRXhtVRmMtGwhso-0rDWXJpbISmFySU';
-      const GID      = '0';
-      const url      = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-
+      const url = `https://docs.google.com/spreadsheets/d/1EYY6jkJ5DJ7RgRXhtVRmMtGwhso-0rDWXJpbISmFySU/export?format=csv&gid=0`;
       fetch(url)
         .then(r => { if (!r.ok) throw new Error('Network error'); return r.text(); })
         .then(csv => {
-          const lines = csv.trim().split('\n');
-          // first line is header: CODE,AREA,TEAM,NAME  — skip it
-          const dataLines = lines.slice(1);
-
+          const lines = csv.trim().split('\n').slice(1);
           stockistEl.innerHTML = '<option value="">-- Select Customer --</option>';
-
-          dataLines.forEach(line => {
-            // Handle quoted CSV fields
-            const cols = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+          lines.forEach(line => {
+            const cols  = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
             const clean = cols.map(c => c.replace(/^"|"$/g, '').trim());
             const [code, area, team, name] = clean;
             if (!name) return;
-
             const opt = document.createElement('option');
             opt.value        = code  || '';
             opt.dataset.area = area  || '';
@@ -629,8 +659,6 @@
             opt.textContent  = name;
             stockistEl.appendChild(opt);
           });
-
-          // Refresh the originalOptions used by search
           if (window._rebuildSearchOptions) window._rebuildSearchOptions();
         })
         .catch(err => {
@@ -639,23 +667,16 @@
         });
     })();
 
-    /* ── FETCH PRODUCT LIST FROM GOOGLE SHEET ── */
-    let products = []; // populated async on load
-
+    /* ── FETCH PRODUCT LIST ── */
+    let products = [];
     (function loadProducts() {
-      const SHEET_ID = '1VVOiZHQSurf7tMa0p8TTcNy44qKvkOg7vR1v9VFqnyU';
-      const GID      = '0';
-      const url      = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-
+      const url = `https://docs.google.com/spreadsheets/d/1VVOiZHQSurf7tMa0p8TTcNy44qKvkOg7vR1v9VFqnyU/export?format=csv&gid=0`;
       fetch(url)
         .then(r => { if (!r.ok) throw new Error('Network error'); return r.text(); })
         .then(csv => {
-          const lines = csv.trim().split('\n').slice(1); // skip header row
-          products = lines
+          products = csv.trim().split('\n').slice(1)
             .map(line => line.replace(/^"|"$/g, '').trim())
             .filter(Boolean);
-
-          // Refresh any existing product selects already in the table
           document.querySelectorAll('.product-select').forEach(sel => {
             const current = sel.value;
             sel.innerHTML = '<option value="">-- Select Product --</option>';
@@ -670,16 +691,13 @@
         .catch(err => console.error('Product fetch error:', err));
     })();
 
-    // const natureOptions = ['Sales Return']; // Not needed as it's a single, global field now
-    const gstOptions = [5, 12, 18];
-
-    const itemsTable = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
-    const addRowBtn = document.getElementById('addRow');
+    const gstOptions  = [5, 12, 18];
+    const itemsTable  = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
+    const addRowBtn   = document.getElementById('addRow');
     const clearRowsBtn = document.getElementById('clearRows');
-    const generateBtn = document.getElementById('generate');
-    const previewDiv = document.getElementById('preview');
-    const dateEl = document.getElementById('date');
-    const cInvNoEl = document.getElementById('cInvNo');
+    const previewDiv  = document.getElementById('preview');
+    const dateEl      = document.getElementById('date');
+    const cInvNoEl    = document.getElementById('cInvNo');
     const noOfBoxesEl = document.getElementById('noOfBoxes');
 
     function createSelect(options, className = '', isNumeric = false) {
@@ -694,28 +712,27 @@
       });
       return select;
     }
-    
+
     function createReadOnlyInput(className) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = className;
-        input.readOnly = true;
-        input.value = '0.00';
-        return input;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = className;
+      input.readOnly = true;
+      input.value = '0.00';
+      return input;
     }
-    // memberID: badge in header + hidden input for data collection
-    const memberIDBadge  = document.getElementById("memberID");
-    const memberIDHidden = document.getElementById("memberIDHidden");
+
+    const memberIDBadge  = document.getElementById('memberID');
+    const memberIDHidden = document.getElementById('memberIDHidden');
 
     function getUniqueMemberID() {
-      let usedIDs = JSON.parse(localStorage.getItem("usedIDs") || "[]");
+      let usedIDs = JSON.parse(localStorage.getItem('usedIDs') || '[]');
       let newID;
       do {
-        const randomNum = Math.floor(10000 + Math.random() * 90000);
-        newID = "SR" + randomNum;
+        newID = 'SR' + Math.floor(10000 + Math.random() * 90000);
       } while (usedIDs.includes(newID));
       usedIDs.push(newID);
-      localStorage.setItem("usedIDs", JSON.stringify(usedIDs));
+      localStorage.setItem('usedIDs', JSON.stringify(usedIDs));
       return newID;
     }
 
@@ -723,32 +740,24 @@
     memberIDBadge.textContent = _srID;
     memberIDHidden.value      = _srID;
 
-    // Row count badge
     function updateRowCountBadge() {
       const n = itemsTable ? itemsTable.rows.length : 0;
       const badge = document.getElementById('rowCountBadge');
       if (badge) badge.textContent = n + (n === 1 ? ' item' : ' items');
     }
 
-    
-    // Function to format the expiry input (MM/YY) - Kept for existing functionality
     function formatExpiryInput(input) {
-        let value = input.value.replace(/\D/g, ''); // Remove non-digits
-        if (value.length > 2) {
-            value = value.substring(0, 2) + '/' + value.substring(2, 4);
-        }
-        input.value = value;
+      let value = input.value.replace(/\D/g, '');
+      if (value.length > 2) value = value.substring(0, 2) + '/' + value.substring(2, 4);
+      input.value = value;
     }
 
     function newRow() {
       const row = itemsTable.insertRow();
       row.classList.add('item-row');
-      const rowCount = itemsTable.rows.length;
+      row.insertCell(0).textContent = itemsTable.rows.length;
 
-      // S.No
-      row.insertCell(0).textContent = rowCount;
-
-      // Product Name — search input + filtered select
+      // Product Name
       const prodCell = row.insertCell(1);
       prodCell.style.minWidth = '180px';
 
@@ -756,7 +765,7 @@
       prodSearch.type = 'text';
       prodSearch.placeholder = 'Search product...';
       prodSearch.className = 'prod-search-input';
-      prodSearch.style.cssText = 'width:100%;margin-bottom:3px;font-size:12px;padding:4px 6px;border-radius:6px;border:1px solid var(--border-color);box-sizing:border-box;';
+      prodSearch.style.cssText = 'width:100%;margin-bottom:3px;font-size:12px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);box-sizing:border-box;';
 
       const prodSelect = document.createElement('select');
       prodSelect.className = 'product-select';
@@ -780,612 +789,693 @@
         prodSelect.size = kw ? Math.min(6, prodSelect.options.length) : 1;
         if (saved) prodSelect.value = saved;
       });
-
-      prodSearch.addEventListener('blur', () => {
-        setTimeout(() => { prodSelect.size = 1; }, 200);
-      });
-
-      prodSelect.addEventListener('change', function () {
-        prodSearch.value = this.value ? '' : '';
-        prodSelect.size = 1;
-      });
+      prodSearch.addEventListener('blur', () => setTimeout(() => { prodSelect.size = 1; }, 200));
+      prodSelect.addEventListener('change', () => { prodSearch.value = ''; prodSelect.size = 1; });
 
       prodCell.appendChild(prodSearch);
       prodCell.appendChild(prodSelect);
 
-      // Removed Nature Select (Index 2)
-
       // Batch
       const batchInput = document.createElement('input');
       batchInput.type = 'text';
-      batchInput.className = 'batch-input'; 
+      batchInput.className = 'batch-input';
       batchInput.placeholder = 'Batch No.';
-      batchInput.setAttribute('oninput', 'this.value = this.value.toUpperCase()'); 
-      row.insertCell(2).appendChild(batchInput); // Index 2
+      batchInput.setAttribute('oninput', 'this.value = this.value.toUpperCase()');
+      row.insertCell(2).appendChild(batchInput);
 
-// Expiry
+      // Expiry
       const expiryInput = document.createElement('input');
-      expiryInput.type = 'text'; // <--- CHANGED TO TEXT
-      expiryInput.maxLength = 5;  // <--- ADDED MAX LENGTH
-      expiryInput.placeholder = 'MM/YY'; // <--- ADDED PLACEHOLDER
-      expiryInput.className = 'expiry-input'; 
-      row.insertCell(3).appendChild(expiryInput); // Index 3
-      
-      // ADD EVENT LISTENER HERE
-      expiryInput.addEventListener('input', function() {
-          formatExpiryInput(this);
+      expiryInput.type = 'text';
+      expiryInput.maxLength = 5;
+      expiryInput.placeholder = 'MM/YY';
+      expiryInput.className = 'expiry-input';
+      row.insertCell(3).appendChild(expiryInput);
+
+      expiryInput.addEventListener('input', function () { formatExpiryInput(this); });
+      expiryInput.addEventListener('change', function () {
+        const statusInput = row.querySelector('.status-input');
+        const val = this.value.trim();
+        if (!val || val.length < 5) return;
+        const [mm, yy] = val.split('/');
+        if (!mm || !yy) return;
+        const expiryDate   = new Date(`20${yy}`, parseInt(mm), 0);
+        const currentDate  = new Date();
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentYear  = currentDate.getFullYear() % 100;
+        const sixMonthsLater = new Date(currentDate);
+        sixMonthsLater.setMonth(currentDate.getMonth() + 6);
+        if (expiryDate < currentDate || (parseInt(yy) === currentYear && parseInt(mm) === currentMonth)) {
+          statusInput.value = 'Expired';
+        } else if (expiryDate <= sixMonthsLater) {
+          statusInput.value = 'Short Expiry';
+        } else {
+          statusInput.value = 'Long Expiry';
+        }
       });
-// Auto Remarks based on Expiry Date
-expiryInput.addEventListener('change', function () {
-  const statusInput = row.querySelector('.status-input');
-  const val = this.value.trim();
-  if (!val || val.length < 5) return; // Skip if invalid format
-
-  const [mm, yy] = val.split('/');
-  if (!mm || !yy) return;
-
-  const expiryDate = new Date(`20${yy}`, parseInt(mm), 0);
-  const currentDate = new Date();
-
-  const currentMonth = currentDate.getMonth() + 1;
-  const currentYear = currentDate.getFullYear() % 100; // last 2 digits
-
-  const sixMonthsLater = new Date(currentDate);
-  sixMonthsLater.setMonth(currentDate.getMonth() + 6);
-
-  // Include current month as expired
-  if (
-    expiryDate < currentDate ||
-    (parseInt(yy) === currentYear && parseInt(mm) === currentMonth)
-  ) {
-    statusInput.value = 'Expired';
-  } else if (expiryDate <= sixMonthsLater) {
-    statusInput.value = 'Short Expiry';
-  } else {
-    statusInput.value = 'Long Expiry';
-  }
-});
 
       // Qty
       const qtyInput = document.createElement('input');
-      qtyInput.type = 'number';
-      qtyInput.min = '1';
-      qtyInput.className = 'qty-input'; 
-      qtyInput.value = '1';
-      row.insertCell(4).appendChild(qtyInput); // Index 4
-// FQty
-const fqtyInput = document.createElement('input');
-fqtyInput.type = 'number';
-fqtyInput.min = '0';
-fqtyInput.className = 'fqty-input';
-fqtyInput.value = '0';
-row.insertCell(5).appendChild(fqtyInput);
+      qtyInput.type = 'number'; qtyInput.min = '1';
+      qtyInput.className = 'qty-input'; qtyInput.value = '1';
+      row.insertCell(4).appendChild(qtyInput);
+
+      // FQty
+      const fqtyInput = document.createElement('input');
+      fqtyInput.type = 'number'; fqtyInput.min = '0';
+      fqtyInput.className = 'fqty-input'; fqtyInput.value = '0';
+      row.insertCell(5).appendChild(fqtyInput);
 
       // Rate
       const rateInput = document.createElement('input');
-      rateInput.type = 'number';
-      rateInput.min = '0';
-      rateInput.className = 'rate-input'; 
-      rateInput.value = '';
-      rateInput.step = '0.01';
-      row.insertCell(6).appendChild(rateInput); // Index 5
+      rateInput.type = 'number'; rateInput.min = '0';
+      rateInput.className = 'rate-input'; rateInput.step = '0.01';
+      row.insertCell(6).appendChild(rateInput);
 
       // GST %
       const gstSelect = createSelect(gstOptions, 'gst-select', true);
-      gstSelect.value = 5; // Default to 5%
-      row.insertCell(7).appendChild(gstSelect); // Index 6
+      gstSelect.value = 5;
+      row.insertCell(7).appendChild(gstSelect);
 
-      // GST Value
-      row.insertCell(8).appendChild(createReadOnlyInput('gst-value-display')); // Index 7
-      
-      // Taxable Value
-      row.insertCell(9).appendChild(createReadOnlyInput('taxable-value-display')); // Index 8
-      
-      // Total Value
-      row.insertCell(10).appendChild(createReadOnlyInput('total-value-display')); // Index 9
+      // Computed cols
+      row.insertCell(8).appendChild(createReadOnlyInput('gst-value-display'));
+      row.insertCell(9).appendChild(createReadOnlyInput('taxable-value-display'));
+      row.insertCell(10).appendChild(createReadOnlyInput('total-value-display'));
 
       // Status
-const statusInput = document.createElement('input');
-statusInput.className = 'status-input';
-statusInput.style.width = "90px";
-statusInput.readOnly = true;      // ← ADD THIS LINE
-statusInput.tabIndex = -1;        // ← optional (prevents cursor focus)
-row.insertCell(11).appendChild(statusInput);
+      const statusInput = document.createElement('input');
+      statusInput.className = 'status-input';
+      statusInput.style.width = '90px';
+      statusInput.readOnly = true;
+      statusInput.tabIndex = -1;
+      row.insertCell(11).appendChild(statusInput);
 
-// Remarks — dropdown + conditional free-text for "Others"
-const remarksCell = row.insertCell(12);
-remarksCell.style.minWidth = '150px';
+      // Remarks
+      const remarksCell = row.insertCell(12);
+      remarksCell.style.minWidth = '150px';
+      const remarksReasons = ['Damage','Breakage','Wrong Product Supplied','Excess Supply','Wrong Billing','Product Recall','Slow Moving','Market Complaint','Others'];
+      const remarksSelect = document.createElement('select');
+      remarksSelect.className = 'remarks-select';
+      remarksSelect.style.cssText = 'width:100%;margin-bottom:3px;font-size:12px;';
+      remarksSelect.innerHTML = '<option value="">-- Reason --</option>' +
+        remarksReasons.map(r => `<option value="${r}">${r}</option>`).join('');
+      const remarksText = document.createElement('input');
+      remarksText.type = 'text';
+      remarksText.className = 'remarks-input remarks-other-text';
+      remarksText.placeholder = 'Specify...';
+      remarksText.style.cssText = 'width:100%;display:none;font-size:12px;margin-top:2px;';
+      remarksSelect.addEventListener('change', function () {
+        remarksText.style.display = this.value === 'Others' ? 'block' : 'none';
+        if (this.value !== 'Others') remarksText.value = '';
+      });
+      remarksCell.appendChild(remarksSelect);
+      remarksCell.appendChild(remarksText);
 
-const remarksReasons = [
-  'Damage','Breakage','Wrong Product Supplied','Excess Supply',
-  'Wrong Billing','Product Recall','Slow Moving','Market Complaint','Others'
-];
-const remarksSelect = document.createElement('select');
-remarksSelect.className = 'remarks-select';
-remarksSelect.style.cssText = 'width:100%;margin-bottom:3px;font-size:12px;';
-remarksSelect.innerHTML = '<option value="">-- Reason --</option>' +
-  remarksReasons.map(r => '<option value="' + r + '">' + r + '</option>').join('');
-
-const remarksText = document.createElement('input');
-remarksText.type = 'text';
-remarksText.className = 'remarks-input remarks-other-text';
-remarksText.placeholder = 'Specify...';
-remarksText.style.cssText = 'width:100%;display:none;font-size:12px;margin-top:2px;';
-
-remarksSelect.addEventListener('change', function () {
-  remarksText.style.display = this.value === 'Others' ? 'block' : 'none';
-  if (this.value !== 'Others') remarksText.value = '';
-});
-
-remarksCell.appendChild(remarksSelect);
-remarksCell.appendChild(remarksText);
-      
-      // Action
+      // Remove
       const removeBtn = document.createElement('button');
       removeBtn.textContent = 'X';
       removeBtn.className = 'remove small';
       removeBtn.onclick = () => { row.remove(); updateSNoAndGrandTotal(); updateRowCountBadge(); };
-      row.insertCell(13).appendChild(removeBtn); // Index 11
+      row.insertCell(13).appendChild(removeBtn);
 
-      // Event Listeners
-      [qtyInput, rateInput, gstSelect].forEach(el => {
-          el.addEventListener('input', () => updateRowCalculations(row));
-      });
-      
+      [qtyInput, rateInput, gstSelect].forEach(el => el.addEventListener('input', () => updateRowCalculations(row)));
       updateRowCalculations(row);
     }
 
     function updateRowCalculations(row) {
-        const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
-        const rate = parseFloat(row.querySelector('.rate-input').value) || 0;
-        const gstPercent = parseFloat(row.querySelector('.gst-select').value) || 0;
-
-        const taxableValue = qty * rate;
-        const gstValue = taxableValue * (gstPercent / 100);
-        const totalValue = taxableValue + gstValue;
-
-        row.querySelector('.taxable-value-display').value = taxableValue.toFixed(2);
-        row.querySelector('.gst-value-display').value = gstValue.toFixed(2);
-        row.querySelector('.total-value-display').value = totalValue.toFixed(2);
-        
-        updateGrandTotal();
+      const qty        = parseFloat(row.querySelector('.qty-input').value)  || 0;
+      const rate       = parseFloat(row.querySelector('.rate-input').value) || 0;
+      const gstPercent = parseFloat(row.querySelector('.gst-select').value) || 0;
+      const taxableValue = qty * rate;
+      const gstValue     = taxableValue * (gstPercent / 100);
+      const totalValue   = taxableValue + gstValue;
+      row.querySelector('.taxable-value-display').value = taxableValue.toFixed(2);
+      row.querySelector('.gst-value-display').value     = gstValue.toFixed(2);
+      row.querySelector('.total-value-display').value   = totalValue.toFixed(2);
+      updateGrandTotal();
     }
 
     function updateSNoAndGrandTotal() {
-      Array.from(itemsTable.rows).forEach((row, index) => {
-        row.cells[0].textContent = index + 1;
-      });
+      Array.from(itemsTable.rows).forEach((row, i) => { row.cells[0].textContent = i + 1; });
       updateGrandTotal();
     }
 
     function updateGrandTotal() {
       let grandTotal = 0;
       Array.from(itemsTable.rows).forEach(row => {
-        const totalValue = parseFloat(row.querySelector('.total-value-display').value) || 0;
-        grandTotal += totalValue;
+        grandTotal += parseFloat(row.querySelector('.total-value-display').value) || 0;
       });
       totalValueDisplay.textContent = grandTotal.toFixed(2);
     }
 
-    // Event listeners for Add/Clear buttons
-    addRowBtn.addEventListener('click', () => { newRow(); updateRowCountBadge(); });
-    clearRowsBtn.addEventListener('click', () => {
-      itemsTable.innerHTML = '';
-      updateGrandTotal();
-      updateRowCountBadge();
-    });
+    addRowBtn.addEventListener('click',   () => { newRow(); updateRowCountBadge(); });
+    clearRowsBtn.addEventListener('click', () => { itemsTable.innerHTML = ''; updateGrandTotal(); updateRowCountBadge(); });
 
     function collectData() {
-        const returnNature = returnNatureEl.value; // Get the single nature value
-  
-        const rows = Array.from(itemsTable.rows).map(row => ({
-            prod: row.querySelector('.product-select').value,
-            nature: returnNature, // Use the single nature value for all rows            
-batch: row.querySelector('.batch-input').value,
-            expiry: row.querySelector('.expiry-input').value, // This value is already in MM/YY format
-            qty: row.querySelector('.qty-input').value,
-fqty: row.querySelector('.fqty-input').value,
-            rate: row.querySelector('.rate-input').value,
-            gstPercent: row.querySelector('.gst-select').value,
-            gstValue: row.querySelector('.gst-value-display').value,
-            taxableValue: row.querySelector('.taxable-value-display').value,
-            totalValue: row.querySelector('.total-value-display').value,
-            status: row.querySelector('.status-input').value,
-remarks: (function() {
-  const sel = row.querySelector('.remarks-select');
-  const txt = row.querySelector('.remarks-other-text');
-  if (!sel) return '';
-  return sel.value === 'Others' ? (txt ? txt.value.trim() : '') : sel.value;
-})(),
-        })).filter(r => r.prod && parseFloat(r.qty) > 0);
+      const returnNature = returnNatureEl.value;
+      const rows = Array.from(itemsTable.rows).map(row => ({
+        prod:         row.querySelector('.product-select').value,
+        nature:       returnNature,
+        batch:        row.querySelector('.batch-input').value,
+        expiry:       row.querySelector('.expiry-input').value,
+        qty:          row.querySelector('.qty-input').value,
+        fqty:         row.querySelector('.fqty-input').value,
+        rate:         row.querySelector('.rate-input').value,
+        gstPercent:   row.querySelector('.gst-select').value,
+        gstValue:     row.querySelector('.gst-value-display').value,
+        taxableValue: row.querySelector('.taxable-value-display').value,
+        totalValue:   row.querySelector('.total-value-display').value,
+        status:       row.querySelector('.status-input').value,
+        remarks: (() => {
+          const sel = row.querySelector('.remarks-select');
+          const txt = row.querySelector('.remarks-other-text');
+          if (!sel) return '';
+          return sel.value === 'Others' ? (txt ? txt.value.trim() : '') : sel.value;
+        })()
+      })).filter(r => r.prod && parseFloat(r.qty) > 0);
 
-        const cInvDate = dateEl.value;
-        const cInvNo = cInvNoEl.value;
-        const stockistOpt = stockistEl.selectedOptions[0];
-        const stockistName = stockistOpt ? stockistOpt.textContent : '';
-        const stockistCode = document.getElementById('stockistCode').value;
-        const area = document.getElementById('area').value;
-        const team = document.getElementById('team').value;
-        const noOfBoxes = noOfBoxesEl.value;
-        const grandTotal = totalValueDisplay.textContent;
- const memberID = document.getElementById('memberIDHidden').value || document.getElementById('memberID').textContent;
-const courierName = document.getElementById('courierName').value;
-const podNo = document.getElementById('podNo').value;
-        
-        if (!cInvDate || !cInvNo || !stockistName) {
-            alert("Please fill C.Inv Date, C.Inv No., and Stockist Name.");
-            return null;
-        }
-        if (rows.length === 0) {
-            alert("Please add at least one product with quantity.");
-            return null;
-        }
+      const cInvDate     = dateEl.value;
+      const cInvNo       = cInvNoEl.value;
+      const stockistOpt  = stockistEl.selectedOptions[0];
+      const stockistName = stockistOpt ? stockistOpt.textContent : '';
+      const stockistCode = document.getElementById('stockistCode').value;
+      const area         = document.getElementById('area').value;
+      const team         = document.getElementById('team').value;
+      const noOfBoxes    = noOfBoxesEl.value;
+      const grandTotal   = totalValueDisplay.textContent;
+      const memberID     = memberIDHidden.value || memberIDBadge.textContent;
+      const courierName  = document.getElementById('courierName').value;
+      const podNo        = document.getElementById('podNo').value;
 
-        return { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID, courierName, podNo };
-    }
-
-    function generatePreview() {
-        const data = collectData();
-        if (!data) return;
-
-        const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID } = data;
-        
-        // Reformat date from YYYY-MM-DD to DD-MM-YYYY
-        const [year, month, day] = cInvDate.split('-');
-        const formattedDate = `${day}/${month}/${year}`;
-
-        // START NEW PREVIEW LAYOUT
-        let html = `
-            <div id="printContent">
-                <p class="report-company-name">PRISTINE PEARL PHARMA PVT LTD</p>
-                <p class="report-title">SALES RETURN REPORT</p>
-                
-                <div class="report-header">
-                    <div class="report-meta-item"><strong>Stockist Name:</strong> ${stockistName}</div>
-                    <div class="report-meta-item"><strong>C.Inv No.:</strong> ${cInvNo}</div>
-                    <div class="report-meta-item"><strong>C.Inv Date:</strong> ${formattedDate}</div>
-<div class="report-meta-item"><strong>SR REF NO.</strong>${data.memberID}</div>
-<div class="report-meta-item"><strong>Courier:</strong> ${data.courierName}</div>
-<div class="report-meta-item"><strong>POD No:</strong> ${data.podNo}</div>
-                    <div class="report-meta-item"><strong>Stockist Code:</strong> ${stockistCode}</div>
-
-                    <div class="report-meta-item"><strong>Nature:</strong> ${returnNature}</div>
-                    <div class="report-meta-item"><strong>Area/State:</strong> ${area} / ${team}</div>
-                    <div class="report-meta-item"><strong>No. of Boxes:</strong> ${noOfBoxes} </div>
-                </div>
-
-                <table class="report-table" style="width:100%;border-collapse:collapse;margin-bottom:0;">
-                    <thead>
-                        <tr>
-                            <th style="width:3%">S.No</th>
-                            <th style="width:25%">Product Name</th>
-                            <th style="width:10%">Batch</th>
-                            <th style="width:7%;text-align:center;">Expiry</th>
-                            <th style="width:5%;text-align:center;">Qty</th>
-<th style="width:5%;text-align:center;">FQty</th>
-                            <th style="width:8%;text-align:right;">Rate</th>
-                            <th style="width:5%;text-align:center;">GST %</th>
-                            <th style="width:10%;text-align:right;">Taxable</th>
-                            <th style="width:10%;text-align:right;">GST Val</th>
-                            <th style="width:12%;text-align:right;">Total</th>
-                            <th style="width:10%">Status</th>
-<th style="width:15%">Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows.map((r, i) => `
-                            <tr>
-                                <td style="text-align:center;">${i + 1}</td>
-                                <td>${r.prod}</td>
-                                <td>${r.batch}</td>
-                                <td style="text-align:center;">${r.expiry || ''}</td>
-                                <td style="text-align:center;">${r.qty}</td>
-<td style="text-align:center;">${r.fqty}</td>
-                                <td style="text-align:right;">${parseFloat(r.rate).toFixed(2)}</td>
-                                <td style="text-align:center;">${r.gstPercent}%</td>
-                                <td style="text-align:right;">${parseFloat(r.taxableValue).toFixed(2)}</td>
-                                <td style="text-align:right;">${parseFloat(r.gstValue).toFixed(2)}</td>
-                                <td style="text-align:right;font-weight:bold;">${parseFloat(r.totalValue).toFixed(2)}</td>
-                                <td>${r.status}</td>
-<td>${r.remarks}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                <div class="report-footer-total">
-                    GRAND TOTAL: <span>${grandTotal}</span>
-                </div>
-                <p style="margin-top:5px;font-size:11px;color:#7f8c8d;text-align:center;">Report Generated: ${new Date().toLocaleString()}</p>
-            </div>
-        `;
-        // END NEW PREVIEW LAYOUT
-        
-        previewDiv.innerHTML = html;
-        previewDiv.hidden = false;
+      if (!cInvDate || !cInvNo || !stockistName) {
+        alert('Please fill C.Inv Date, C.Inv No., and Stockist Name.');
+        return null;
+      }
+      if (rows.length === 0) {
+        alert('Please add at least one product with quantity.');
+        return null;
+      }
+      return { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID, courierName, podNo };
     }
 
     async function submitDataToSheet() {
-        const data = collectData();
-        if (!data) return;
-        
-        const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID } = data;
-
-        const dateObj = new Date(cInvDate + 'T00:00:00');
-        const selectedDateFormatted = String(dateObj.getDate()).padStart(2,'0') + '/' + String(dateObj.getMonth()+1).padStart(2,'0') + '/' + dateObj.getFullYear();
-        
-        const now = new Date();
-        const generatedDateTime = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-        
-        const formData = {
-  cInvDate: selectedDateFormatted,
-  memberID: data.memberID,
-  cInvNo: cInvNo,
-  noOfBoxes: noOfBoxes,
-  totalValue: grandTotal,
-  generatedDateTime: generatedDateTime,
-  stockistName: stockistName,
-  stockistCode: stockistCode,
-  area: area,
-  team: team,
-  courierName: data.courierName,
-  podNo: data.podNo,
-
-  itemRows: rows.map((r, i) => ({
-      sNo: i + 1,
-      product: r.prod,
-      batch: r.batch,
-      expiry: r.expiry || "",
-rate: r.rate,
-      qty: r.qty,
-      fqty: r.fqty || "", 
-      gstPercent: r.gstPercent,
-      taxableValue: r.taxableValue,
-      gstValue: r.gstValue,
-      totalValue: r.totalValue,
-      status: r.status || "",
-      remarks: r.remarks || ""
-  }))
-};
-
-        uploadStatus.style.display = 'inline';
-        uploadStatus.textContent = 'Uploading...';
-        submitBtn.disabled = true;
-        submitBtn.style.opacity = '0.5';
-        downloadXlsxBtn.style.display = 'none';
-        sendMailBtn.style.display = 'none';
-        
-        try {
-            const response = await fetch(scriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(formData)
-            });
-
-            setTimeout(() => {
-                uploadStatus.textContent = 'Success! Data uploaded.';
-                uploadStatus.style.color = '#217346';
-                submitBtn.style.display = 'none';
-                downloadXlsxBtn.style.display = 'inline-block';
-                sendMailBtn.style.display = 'inline-block';
-                generateBtn.style.display = 'inline-block';
-                submitBtn.style.opacity = '1'; 
-            }, 1500); 
-
-        } catch (error) {
-            console.error('Submission failed:', error);
-            uploadStatus.textContent = 'Error! Check console.';
-            uploadStatus.style.color = 'var(--error-color)';
-            submitBtn.disabled = false;
-            submitBtn.style.opacity = '1';
-            submitBtn.style.display = 'inline-block';
-            downloadXlsxBtn.style.display = 'none';
-            sendMailBtn.style.display = 'none';
-        }
-    }
-
-    function downloadXlsx() {
       const data = collectData();
       if (!data) return;
+      const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature } = data;
 
-      const { rows, memberID, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature } = data;
-      
       const dateObj = new Date(cInvDate + 'T00:00:00');
-      const selectedDateFormatted = String(dateObj.getDate()).padStart(2,'0') + '/' + String(dateObj.getMonth()+1).padStart(2,'0') + '/' + dateObj.getFullYear();
+      const selectedDateFormatted = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
       const now = new Date();
-      const generatedDateTime = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const generatedDateTime = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
 
-      let excelData = [];
-      // Updated header: Nature column is present, but values will be the single value
-      excelData.push(["SR REF NO.", "C.Inv Date","C.Inv No.","No. of Boxes","Total Value","Report Generated","Stockist","Stockist Code","Area","Team","S.No","Product","Nature","Batch","Expiry","Qty","Rate","GST %","Taxable Val","GST Val","Total Val","Item Remarks"]);
-      
-      rows.forEach((r,i)=>{
-        let exp = r.expiry || ""; // FIX 3: Directly use r.expiry (e.g., "12/25")
-        excelData.push([
-          data.memberID, selectedDateFormatted, cInvNo, noOfBoxes, grandTotal, generatedDateTime, 
-          stockistName, stockistCode, area, team, i+1, r.prod, returnNature, r.batch, exp, 
-          r.qty, r.rate, r.gstPercent, r.taxableValue, r.gstValue, r.totalValue, r.remarks
-        ]);
+      const formData = {
+        action: 'submitReturn',
+        cInvDate: selectedDateFormatted,
+        memberID: data.memberID,
+        cInvNo, noOfBoxes,
+        returnValue: document.getElementById('returnValue').value || '',
+        totalValue: grandTotal,
+        generatedDateTime,
+        stockistName, stockistCode, area, team,
+        courierName: data.courierName,
+        podNo: data.podNo,
+        itemRows: rows.map((r, i) => ({
+          sNo: i + 1, product: r.prod, batch: r.batch,
+          expiry: r.expiry || '', rate: r.qty, qty: r.qty, fqty: r.fqty || '',
+          gstPercent: r.gstPercent, taxableValue: r.taxableValue,
+          gstValue: r.gstValue, totalValue: r.totalValue,
+          status: r.status || '', remarks: r.remarks || ''
+        }))
+      };
+
+      uploadStatus.style.display = 'inline';
+      uploadStatus.textContent = 'Uploading...';
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.5';
+
+      try {
+        await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: {'Content-Type':'application/json'}, body: JSON.stringify(formData) });
+        await updateGenDate(data.memberID);
+        setTimeout(() => {
+          uploadStatus.style.display = 'none';
+          submitBtn.style.opacity = '1';
+          submitBtn.disabled = false;
+          showSuccessModal('Data Saved Successfully', `Sales Return ${data.memberID} has been uploaded successfully.`);
+          clearForm();
+          const nextID = getUniqueMemberID();
+          memberIDBadge.textContent = nextID;
+          memberIDHidden.value = nextID;
+        }, 1500);
+      } catch (error) {
+        console.error('Submission failed:', error);
+        uploadStatus.textContent = 'Error! Check console.';
+        uploadStatus.style.color = '#dc3545';
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+      }
+    }
+
+    submitBtn.addEventListener('click', submitDataToSheet);
+
+    /* ═══════════════════════════════════════
+       DRAFT FEATURE (Sheet-based)
+       ═══════════════════════════════════════ */
+    function fmtDate(d) {
+      if (!d) return '';
+      const o = new Date(d + 'T00:00:00');
+      return `${String(o.getDate()).padStart(2,'0')}/${String(o.getMonth()+1).padStart(2,'0')}/${o.getFullYear()}`;
+    }
+    function nowDT() {
+      const n = new Date();
+      return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+    }
+
+    function collectDraftHeader() {
+      const cInvDate     = document.getElementById('date').value;
+      const cInvNo       = document.getElementById('cInvNo').value.trim();
+      const stockistOpt  = stockistEl.selectedOptions[0];
+      const stockistName = stockistOpt ? stockistOpt.textContent.trim() : '';
+      const stockistCode = document.getElementById('stockistCode').value;
+      const area         = document.getElementById('area').value;
+      const team         = document.getElementById('team').value;
+      const courier      = document.getElementById('courierName').value;
+      const pod          = document.getElementById('podNo').value;
+      const boxes        = document.getElementById('noOfBoxes').value;
+      const value        = document.getElementById('returnValue').value;
+      const memberID     = memberIDHidden.value || memberIDBadge.textContent;
+      if (!stockistName) { alert('Please select a Stockist before saving draft.'); return null; }
+      return { memberID, cInvDate: fmtDate(cInvDate), cInvNo, stockistCode, stockistName, area, team, courierName: courier, podNo: pod, noOfBoxes: boxes, returnValue: value };
+    }
+
+    async function saveDraftToSheet() {
+      const header = collectDraftHeader();
+      if (!header) return;
+      const saveDraftBtn = document.getElementById('saveDraft');
+      saveDraftBtn.disabled = true;
+      saveDraftBtn.textContent = '⏳ Saving...';
+      const payload = { action: 'saveDraft', rDraftDate: nowDT(), ...header };
+      try {
+        await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        setTimeout(() => {
+          saveDraftBtn.disabled = false;
+          saveDraftBtn.textContent = '💾 Save Draft';
+          showSuccessModal('Draft Saved Successfully', 'Your draft has been saved. A new Sales Return form is ready.');
+          clearForm();
+          const nextID = getUniqueMemberID();
+          memberIDBadge.textContent = nextID;
+          memberIDHidden.value = nextID;
+        }, 1200);
+      } catch (e) {
+        saveDraftBtn.disabled = false;
+        saveDraftBtn.textContent = '💾 Save Draft';
+      }
+    }
+
+    async function updateGenDate(memberID) {
+      const payload = { action: 'updateGenDate', memberID, rGenDate: nowDT() };
+      try {
+        await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      } catch(e) { console.warn('Gen date update failed:', e); }
+    }
+
+    /* ── OPEN DRAFT MODAL ── */
+    function openDraftModal() {
+      document.getElementById('draftModal').style.display = 'flex';
+      loadDraftList();
+    }
+    function closeDraftModal() {
+      document.getElementById('draftModal').style.display = 'none';
+    }
+
+    /* ── SUCCESS MODAL ── */
+    function showSuccessModal(title, message) {
+      document.getElementById('successTitle').textContent = title;
+      document.getElementById('successMessage').textContent = message;
+      document.getElementById('successModal').style.display = 'flex';
+      setTimeout(() => {
+        closeSuccessModal();
+      }, 3000);
+    }
+    function closeSuccessModal() {
+      document.getElementById('successModal').style.display = 'none';
+    }
+
+    async function loadDraftList() {
+      const wrap = document.getElementById('draftListWrap');
+      wrap.innerHTML = '<p style="color:#888;text-align:center;margin-top:30px;">⏳ Loading drafts...</p>';
+      try {
+        const res  = await fetch(scriptUrl + '?action=getDrafts');
+        const json = await res.json();
+        window._cachedDrafts = json.drafts || [];
+        renderDraftList(window._cachedDrafts);
+      } catch(e) {
+        wrap.innerHTML = '<p style="color:#c00;text-align:center;margin-top:30px;">❌ Failed to load drafts. Check sheet access.</p>';
+      }
+    }
+
+    function renderDraftList(drafts) {
+      const wrap  = document.getElementById('draftListWrap');
+      const query = (document.getElementById('draftSearchBox').value || '').toLowerCase();
+
+      // Only show entries that have NOT been uploaded (no rGenDate)
+      const pendingDrafts = drafts.filter(d => !d.rGenDate);
+
+      const filtered = query
+        ? pendingDrafts.filter(d =>
+            (d.memberID||'').toLowerCase().includes(query) ||
+            (d.stockistName||'').toLowerCase().includes(query) ||
+            (d.cInvNo||'').toLowerCase().includes(query)
+          )
+        : pendingDrafts;
+
+      if (!filtered.length) {
+        wrap.innerHTML = '<p style="color:#888;text-align:center;margin-top:30px;">No pending drafts found.</p>';
+        return;
+      }
+
+      const cols = ['SR Ref No.', 'Draft Date', 'C.Inv No.', 'Stockist', 'Area / State', 'Boxes', 'Value (₹)', ''];
+      let html = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr>${cols.map(c => `<th style="background:linear-gradient(135deg,#0056b3,#003d82);color:#fff;padding:8px 10px;white-space:nowrap;font-weight:600;letter-spacing:.4px;">${c}</th>`).join('')}</tr></thead>
+        <tbody>`;
+
+      filtered.forEach((d, i) => {
+        const bg = i % 2 === 0 ? '#fff' : '#f7f9fc';
+        const areaState = [d.area, d.team].filter(Boolean).join(' / ');
+        
+        // Format draft date to DD/MM/YYYY
+        let draftDateFormatted = '';
+        if (d.rDraftDate) {
+          try {
+            const parsed = new Date(d.rDraftDate);
+            draftDateFormatted = `${String(parsed.getDate()).padStart(2,'0')}/${String(parsed.getMonth()+1).padStart(2,'0')}/${parsed.getFullYear()}`;
+          } catch(e) {
+            draftDateFormatted = d.rDraftDate;
+          }
+        }
+        
+        html += `<tr style="background:${bg};">
+          <td style="padding:7px 10px;font-weight:700;color:#0056b3;white-space:nowrap;">${d.memberID||''}</td>
+          <td style="padding:7px 8px;white-space:nowrap;">${draftDateFormatted}</td>
+          <td style="padding:7px 8px;">${d.cInvNo||''}</td>
+          <td style="padding:7px 8px;">${d.stockistName||''}</td>
+          <td style="padding:7px 8px;white-space:nowrap;">${areaState}</td>
+          <td style="padding:7px 8px;text-align:right;">${d.noOfBoxes||''}</td>
+          <td style="padding:7px 8px;text-align:right;">${d.returnValue||''}</td>
+          <td style="padding:7px 8px;text-align:center;">
+            <button onclick='restoreDraft(${JSON.stringify(d).replace(/'/g,"&#39;")})' style="font-size:11px;padding:4px 12px;background:#0056b3;color:#fff;border:0;border-radius:6px;cursor:pointer;white-space:nowrap;">📂 Open</button>
+          </td>
+        </tr>`;
       });
 
-      const ws = XLSX.utils.aoa_to_sheet(excelData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Report");
-      XLSX.writeFile(wb, `${stockistName.replace(/\s+/g,'_')}_${selectedDateFormatted}-Pristine.xlsx`);
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
     }
 
-    function generatePlainTextReport(data) {
-        if (!data) return "";
-        const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal, returnNature, memberID } = data;
-        
-        let plainText = `PRISTINE PEARL PHARMA PVT LTD - SALES RETURN REPORT\n\n`;
-        plainText += `Stockist: ${stockistName} (${stockistCode})\n`;
-        plainText += `Area / Team: ${area} / ${team}\n`;
-        plainText += `C.Inv Date: ${cInvDate}\nC.Inv No.: ${cInvNo}\n`;
-        plainText += `Nature: ${returnNature}\n`; // Include Nature here
-        plainText += `No. of Boxes: ${noOfBoxes || 'N/A'}\n\n--- PRODUCT DETAILS ---\n\n`;
-
-        rows.forEach((r, i) => {
-            const expFormatted = r.expiry || ''; // FIX 4: Directly use r.expiry (e.g., "12/25")
-            plainText += `--- Item ${i + 1} ---\n`;
-            plainText += `Product: ${r.prod}\n`;
-            plainText += `Batch/Expiry: ${r.batch} / ${expFormatted}\n`;
-            plainText += `Details: ${r.qty} x ${r.rate} | Taxable: ${r.taxableValue} | GST@${r.gstPercent}%: ${r.gstValue}\n`;
-            plainText += `Total Value: ${r.totalValue}\n`;
-            if (r.remarks) { plainText += `Remarks: ${r.remarks}\n`; }
-            plainText += '\n'; 
+    document.addEventListener('DOMContentLoaded', function () {
+      const draftSearchBox = document.getElementById('draftSearchBox');
+      if (draftSearchBox) {
+        draftSearchBox.addEventListener('input', async function () {
+          if (window._cachedDrafts) {
+            renderDraftList(window._cachedDrafts);
+          } else {
+            await loadDraftList();
+          }
         });
-        
-        plainText += '------------------------\n';
-        plainText += `TOTAL RETURN VALUE: ${grandTotal}\n\n`;
-        plainText += `Report Generated: ${new Date().toLocaleString()}`;
+      }
+    });
 
-        return encodeURIComponent(plainText);
-    }    
+    function restoreDraft(d) {
+      closeDraftModal();
+      memberIDBadge.textContent = d.memberID;
+      memberIDHidden.value      = d.memberID;
 
-    function sendMail() {
-        const data = collectData();
-        if (!data) return;
-        const { cInvDate, stockistName } = data;
-        const dateObj = new Date(cInvDate + 'T00:00:00');
-        const selectedDateFormatted = String(dateObj.getDate()).padStart(2,'0') + '-' + String(dateObj.getMonth()+1).padStart(2,'0') + '-' + dateObj.getFullYear();
-        const subject = `Sales return: ${stockistName} ${selectedDateFormatted}`;
-        const body = generatePlainTextReport(data);
-        const mailtoLink = `mailto:?subject${encodeURIComponent(subject)}&body=${body}`;
-        window.location.href = mailtoLink;
+      if (d.cInvDate) {
+        const parts = d.cInvDate.split('/');
+        if (parts.length === 3) document.getElementById('date').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      document.getElementById('cInvNo').value       = d.cInvNo       || '';
+      document.getElementById('noOfBoxes').value    = d.noOfBoxes    || '';
+      document.getElementById('returnValue').value  = d.returnValue  || '';
+      document.getElementById('courierName').value  = d.courierName  || '';
+      document.getElementById('podNo').value        = d.podNo        || '';
+
+      function trySetStockist(attempts) {
+        const opt = Array.from(stockistEl.options).find(o => o.value === d.stockistCode || o.textContent.trim() === d.stockistName);
+        if (opt) {
+          stockistEl.value = opt.value;
+          stockistEl.dispatchEvent(new Event('change'));
+        } else if (attempts > 0) {
+          setTimeout(() => trySetStockist(attempts - 1), 300);
+        }
+      }
+      trySetStockist(10);
+
+      uploadStatus.style.display = 'inline';
+      uploadStatus.textContent   = `📂 Draft restored: ${d.memberID}`;
+      uploadStatus.style.color   = '#5b4fcf';
     }
 
+    document.getElementById('saveDraft').addEventListener('click', saveDraftToSheet);
+    document.getElementById('openDraft').addEventListener('click', openDraftModal);
+    document.getElementById('recoverBtn').addEventListener('click', recoverFromLocalStorage);
+    document.getElementById('downloadBackup').addEventListener('click', downloadBackupExcel);
+    window.restoreDraft    = restoreDraft;
+    window.closeDraftModal = closeDraftModal;
+    window.closeSuccessModal = closeSuccessModal;
 
-    // Update Event Listeners for new button logic
-    generateBtn.addEventListener('click', generatePreview);
-    submitBtn.addEventListener('click', submitDataToSheet);
-    downloadXlsxBtn.addEventListener('click', downloadXlsx);
-    sendMailBtn.addEventListener('click', sendMail);
-
-
-    window.addEventListener('DOMContentLoaded', ()=>{
-      const today = new Date();
-      // FIX: Use YYYY-MM-DD format for input type="date" value
-      dateEl.value = today.toISOString().split('T')[0];
+    window.addEventListener('DOMContentLoaded', () => {
+      dateEl.value = new Date().toISOString().split('T')[0];
       newRow();
       updateRowCountBadge();
+      updateRecoverButtonVisibility();
+      saveDraft(); // Initial save
     });
-document.getElementById("viewReport").addEventListener("click", function () {
-    window.open("report.html", "_blank");
-});
-  </script>
-  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 
-<script>
-const searchInput = document.getElementById("stockistSearch");
-const stockistSelect = document.getElementById("stockist");
+    /* ── LISTEN FOR CHANGES AND SAVE ── */
+    ['date', 'cInvNo', 'stockist', 'courierName', 'podNo', 'noOfBoxes', 'returnValue'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', saveDraft);
+        el.addEventListener('input', saveDraft);
+      }
+    });
+    itemsTable.addEventListener('change', saveDraft);
+    itemsTable.addEventListener('input', saveDraft);
+    const searchInput    = document.getElementById('stockistSearch');
+    let originalOptions  = Array.from(stockistEl.options);
 
-// originalOptions rebuilt after async fetch
-let originalOptions = Array.from(stockistSelect.options);
+    window._rebuildSearchOptions = function () {
+      originalOptions = Array.from(stockistEl.options);
+    };
 
-// Called by the fetch routine once options are populated
-window._rebuildSearchOptions = function () {
-  originalOptions = Array.from(stockistSelect.options);
-};
+    searchInput.addEventListener('input', function () {
+      const keyword = this.value.toLowerCase();
+      stockistEl.innerHTML = '';
+      originalOptions.forEach(opt => {
+        if (opt.text.toLowerCase().includes(keyword) || opt.value === '') {
+          stockistEl.appendChild(opt.cloneNode(true));
+        }
+      });
+      stockistEl.size = Math.min(8, stockistEl.options.length);
+    });
+    stockistEl.addEventListener('change', () => { stockistEl.size = 1; });
+    searchInput.addEventListener('blur',  () => setTimeout(() => { stockistEl.size = 1; }, 200));
 
-searchInput.addEventListener("input", function () {
-  const keyword = this.value.toLowerCase();
-  stockistSelect.innerHTML = "";
-
-  originalOptions.forEach(opt => {
-    if (opt.text.toLowerCase().includes(keyword) || opt.value === "") {
-      stockistSelect.appendChild(opt.cloneNode(true));
+    /* ── CLEAR FORM FUNCTION ── */
+    function clearForm() {
+      // Clear all input fields
+      document.getElementById('date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('cInvNo').value = '';
+      document.getElementById('stockist').value = '';
+      document.getElementById('stockistCode').value = '';
+      document.getElementById('area').value = '';
+      document.getElementById('team').value = '';
+      document.getElementById('noOfBoxes').value = '';
+      document.getElementById('returnValue').value = '';
+      document.getElementById('courierName').value = '';
+      document.getElementById('podNo').value = '';
+      
+      // Clear items table
+      itemsTable.innerHTML = '';
+      newRow();
+      updateRowCountBadge();
+      updateGrandTotal();
+      
+      // Clear localStorage draft
+      localStorage.removeItem('SR_DRAFT');
+      updateRecoverButtonVisibility();
+      
+      // Hide status message
+      uploadStatus.style.display = 'none';
     }
-  });
 
-  // Expand dropdown while typing
-  stockistSelect.size = Math.min(8, stockistSelect.options.length);
-});
+    /* ── AUTO-SAVE DRAFT (localStorage, power-cut safe) - Every 2 minutes ── */
+    function saveDraft() {
+      const draft = {
+        memberID:    memberIDHidden?.value || memberIDBadge?.textContent || '',
+        date:        document.getElementById('date')?.value        || '',
+        cInvNo:      document.getElementById('cInvNo')?.value      || '',
+        stockist:    document.getElementById('stockist')?.value    || '',
+        courierName: document.getElementById('courierName')?.value || '',
+        podNo:       document.getElementById('podNo')?.value       || '',
+        noOfBoxes:   document.getElementById('noOfBoxes')?.value   || '',
+        returnValue: document.getElementById('returnValue')?.value || '',
+        items: [],
+        lastSaved: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+      };
+      document.querySelectorAll('#itemsTable tbody tr').forEach(row => {
+        draft.items.push({
+          prod:          row.querySelector('.product-select')?.value    || '',
+          batch:         row.querySelector('.batch-input')?.value       || '',
+          expiry:        row.querySelector('.expiry-input')?.value      || '',
+          qty:           row.querySelector('.qty-input')?.value         || '',
+          fqty:          row.querySelector('.fqty-input')?.value        || '',
+          rate:          row.querySelector('.rate-input')?.value        || '',
+          gst:           row.querySelector('.gst-select')?.value        || '',
+          status:        row.querySelector('.status-input')?.value      || '',
+          remarksSelect: row.querySelector('.remarks-select')?.value    || '',
+          remarksOther:  row.querySelector('.remarks-other-text')?.value|| ''
+        });
+      });
+      localStorage.setItem('SR_DRAFT', JSON.stringify(draft));
+      updateRecoverButtonVisibility();
+      updateLastSaveTime(draft.lastSaved);
+    }
+    
+    function updateLastSaveTime(timestamp) {
+      const timeEl = document.getElementById('lastSaveTime');
+      if (timeEl && timestamp) {
+        timeEl.textContent = `⏱ Auto-saved at ${timestamp}`;
+      }
+    }
+    
+    // Auto-save every 2 minutes
+    setInterval(saveDraft, 120000);
+    
+    /* ── RECOVER FROM LOCAL STORAGE ── */
+    function recoverFromLocalStorage() {
+      const saved = localStorage.getItem('SR_DRAFT');
+      if (!saved) {
+        alert('No saved data found.');
+        return;
+      }
+      
+      let data;
+      try {
+        data = JSON.parse(saved);
+      } catch (e) {
+        alert('Saved backup data is corrupted and could not be read.');
+        console.error('SR_DRAFT parse error:', e);
+        return;
+      }
 
-// Collapse dropdown after selection
-stockistSelect.addEventListener("change", () => {
-  stockistSelect.size = 1;
-});
+      if (data.memberID) {
+        memberIDBadge.textContent = data.memberID;
+        memberIDHidden.value      = data.memberID;
+      }
+      document.getElementById('date').value        = data.date        || '';
+      document.getElementById('cInvNo').value      = data.cInvNo      || '';
+      document.getElementById('courierName').value = data.courierName || '';
+      document.getElementById('podNo').value       = data.podNo       || '';
+      document.getElementById('noOfBoxes').value   = data.noOfBoxes   || '';
+      document.getElementById('returnValue').value = data.returnValue  || '';
 
-// Auto collapse when leaving search
-searchInput.addEventListener("blur", () => {
-  setTimeout(() => stockistSelect.size = 1, 200);
-});
+      function applyStockist(attempts) {
+        const opt = Array.from(stockistEl.options).find(o => o.value === data.stockist);
+        if (opt) {
+          stockistEl.value = data.stockist;
+          stockistEl.dispatchEvent(new Event('change'));
+        } else if (attempts > 0) {
+          // stockist list may still be loading from the sheet - retry shortly
+          setTimeout(() => applyStockist(attempts - 1), 300);
+        }
+      }
+      applyStockist(10);
 
-/* ===============================
-   AUTO SAVE DRAFT (POWER CUT SAFE)
-   =============================== */
+      itemsTable.innerHTML = '';
+      (data.items || []).forEach(item => {
+        newRow();
+        const row = itemsTable.rows[itemsTable.rows.length - 1];
+        const set = (cls, val) => { const el = row.querySelector(cls); if (el) el.value = val; };
+        set('.product-select',   item.prod   || '');
+        set('.batch-input',      item.batch  || '');
+        set('.expiry-input',     item.expiry || '');
+        set('.qty-input',        item.qty    || '1');
+        set('.fqty-input',       item.fqty   || '0');
+        set('.rate-input',       item.rate   || '');
+        set('.gst-select',       item.gst    || '5');
+        set('.status-input',     item.status || '');
+        const remarksSelect = row.querySelector('.remarks-select');
+        if (remarksSelect) { remarksSelect.value = item.remarksSelect || ''; remarksSelect.dispatchEvent(new Event('change')); }
+        const remarksOther = row.querySelector('.remarks-other-text');
+        if (remarksOther) remarksOther.value = item.remarksOther || '';
+        updateRowCalculations(row);
+      });
+      if (!data.items || data.items.length === 0) newRow();
+      updateRowCountBadge();
+      updateSNoAndGrandTotal();
+      
+      uploadStatus.style.display = 'inline';
+      uploadStatus.textContent   = `📂 Data recovered from local backup (Saved: ${data.lastSaved || 'Unknown'})`;
+      uploadStatus.style.color   = '#5b4fcf';
+    }
+    
+    /* ── DOWNLOAD BACKUP AS EXCEL ── */
+    function downloadBackupExcel() {
+      const data = collectData();
+      if (!data) return;
+      const { rows, cInvDate, cInvNo, stockistName, stockistCode, area, team, noOfBoxes, grandTotal } = data;
+      
+      const dateObj = new Date(cInvDate + 'T00:00:00');
+      const selectedDateFormatted = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
+      const now = new Date();
+      const backupDateTime = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      
+      const excelData = [
+        ["LOCAL BACKUP - NOT YET UPLOADED TO GOOGLE SHEET"],
+        ["Backup Time", backupDateTime],
+        [""],
+        ["SR Ref No.", data.memberID],
+        ["C.Inv Date", selectedDateFormatted],
+        ["C.Inv No.", cInvNo],
+        ["Stockist", stockistName],
+        ["Stockist Code", stockistCode],
+        ["Area", area],
+        ["Team", team],
+        ["No. of Boxes", noOfBoxes],
+        ["Total Value", grandTotal],
+        [""],
+        ["S.No", "Product", "Batch", "Expiry", "Qty", "FQty", "Rate", "GST %", "Taxable Val", "GST Val", "Total Val", "Status", "Remarks"]
+      ];
+      
+      rows.forEach((r, i) => {
+        excelData.push([
+          i+1, r.prod, r.batch, r.expiry || '', r.qty, r.fqty, r.rate, r.gstPercent, 
+          r.taxableValue, r.gstValue, r.totalValue, r.status, r.remarks
+        ]);
+      });
+      
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Backup');
+      XLSX.writeFile(wb, `${stockistName.replace(/\s+/g,'_')}_Backup_${selectedDateFormatted}.xlsx`);
+      
+      uploadStatus.style.display = 'inline';
+      uploadStatus.textContent = '📥 Backup downloaded successfully';
+      uploadStatus.style.color = '#f39c12';
+      setTimeout(() => { uploadStatus.style.display = 'none'; }, 3000);
+    }
+    
+    /* ── CHECK IF RECOVERY DATA EXISTS ── */
+    function updateRecoverButtonVisibility() {
+      const recoverBtn = document.getElementById('recoverBtn');
+      if (!recoverBtn) return;
+      const saved = localStorage.getItem('SR_DRAFT');
+      recoverBtn.style.display = saved ? 'inline-block' : 'none';
+    }
 
-function saveDraft() {
-  const draft = {
-    date: document.getElementById("date")?.value || "",
-    cInvNo: document.getElementById("cInvNo")?.value || "",
-    stockist: document.getElementById("stockist")?.value || "",
-    items: []
-  };
-
-  document.querySelectorAll("#itemsTable tbody tr").forEach(row => {
-    draft.items.push({
-      item: row.querySelector(".itemName")?.value || "",
-      batch: row.querySelector(".batch")?.value || "",
-      qty: row.querySelector(".qty")?.value || "",
-      rate: row.querySelector(".rate")?.value || "",
-      reason: (function() {
-        const sel = row.querySelector('.remarks-select');
-        const txt = row.querySelector('.remarks-other-text');
-        if (!sel) return '';
-        return sel.value === 'Others' ? (txt ? txt.value.trim() : '') : (sel.value || '');
-      })()
-    });
-  });
-
-  localStorage.setItem("SR_DRAFT", JSON.stringify(draft));
-}
-
-// Auto-save every 3 seconds
-setInterval(saveDraft, 3000);
-
-
-/* ===============================
-   RESTORE DRAFT AFTER RESTART
-   =============================== */
-window.addEventListener("load", () => {
-  const draft = localStorage.getItem("SR_DRAFT");
-  if (!draft) return;
-
-  if (confirm(" ⚠ Unsaved Sales Return found. Restore?")) {
-    const data = JSON.parse(draft);
-
-    document.getElementById("date").value = data.date || "";
-    document.getElementById("cInvNo").value = data.cInvNo || "";
-
-    // ✅ FIX STARTS HERE
-    const stockistEl = document.getElementById("stockist");
-    stockistEl.value = data.stockist;
-    stockistEl.dispatchEvent(new Event("change"));
-    // ✅ FIX ENDS HERE
-
-    // Clear rows once
-    itemsTable.innerHTML = "";
-
-    // Restore products
-    data.items.forEach(item => {
-      newRow(item);
-    });
-    updateRowCountBadge();
-  }
-});
-
-
-/* ===============================
-   CLEAR DRAFT AFTER SUCCESS SAVE
-   =============================== */
-function clearDraft() {
-  localStorage.removeItem("SR_DRAFT");
-}
-
-</script>
+    /* ── RESTORE DRAFT AFTER RESTART ── */
+    // Feature removed - auto-save to localStorage instead with manual recovery option
+  </script>
 
 </body>
 </html>
