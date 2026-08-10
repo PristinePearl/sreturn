@@ -1240,6 +1240,98 @@ select.appendChild(opt);
         // (or re-opened cards) doesn't re-query the 1,00,000-row sheet every time.
         window.repDetailsCache = new Map();
 
+        // --- Fuzzy name matching (used when a stockist has no Stockist Code) ---
+
+        // Normalize a name for comparison: uppercase, strip common punctuation,
+        // collapse whitespace.
+        function normalizeName(str) {
+            return String(str || '')
+                .toUpperCase()
+                .replace(/[.,'"()&\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        // Levenshtein edit distance between two strings.
+        function levenshteinDistance(a, b) {
+            const m = a.length, n = b.length;
+            if (m === 0) return n;
+            if (n === 0) return m;
+
+            let prev = new Array(n + 1);
+            let curr = new Array(n + 1);
+            for (let j = 0; j <= n; j++) prev[j] = j;
+
+            for (let i = 1; i <= m; i++) {
+                curr[0] = i;
+                for (let j = 1; j <= n; j++) {
+                    const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                    curr[j] = Math.min(
+                        prev[j] + 1,      // deletion
+                        curr[j - 1] + 1,  // insertion
+                        prev[j - 1] + cost // substitution
+                    );
+                }
+                [prev, curr] = [curr, prev];
+            }
+            return prev[n];
+        }
+
+        // Similarity ratio in [0, 1], 1 meaning identical, based on edit distance
+        // relative to the longer string's length.
+        function similarityRatio(a, b) {
+            const maxLen = Math.max(a.length, b.length);
+            if (maxLen === 0) return 1;
+            return 1 - (levenshteinDistance(a, b) / maxLen);
+        }
+
+        // Picks a handful of distinctive words from a name to use as server-side
+        // "contains" filters, so we only pull down a small candidate set from the
+        // 1,00,000-row sheet instead of scanning it all client-side.
+        function extractSearchTokens(name) {
+            const words = normalizeName(name).split(' ').filter(w => w.length >= 3);
+            const unique = [...new Set(words)];
+            unique.sort((a, b) => b.length - a.length);
+            return unique.slice(0, 3);
+        }
+
+        // Finds representative rows whose Stockist Name is a ~90%+ fuzzy match
+        // for the given name. Used as a fallback when a stockist has no
+        // Stockist Code and the exact name doesn't match (e.g. spelling
+        // differences, extra spaces/punctuation, abbreviations).
+        async function fuzzyMatchRepresentativeByName(name) {
+            const normalizedInput = normalizeName(name);
+            if (!normalizedInput) return [];
+
+            const tokens = extractSearchTokens(name);
+            if (!tokens.length) return [];
+
+            const selectCols = `${REP_COL.STOCKIST_NAME}, ${REP_COL.SM}, ${REP_COL.RSM}, ${REP_COL.ZSM}`;
+            const seenRow = new Set();
+            const candidates = [];
+
+            for (const token of tokens) {
+                const rows = await runRepQuerySafe(
+                    `select ${selectCols} where ${REP_COL.STOCKIST_NAME} contains '${escQueryLiteral(token)}'`
+                );
+                for (const row of rows) {
+                    const key = row['STOCKIST NAME'] + '||' + row['SM'] + '||' + row['RSM'] + '||' + row['ZSM'];
+                    if (!seenRow.has(key)) {
+                        seenRow.add(key);
+                        candidates.push(row);
+                    }
+                }
+                if (candidates.length >= 500) break; // avoid runaway growth on generic tokens
+            }
+
+            const FUZZY_THRESHOLD = 0.9; // ~90% name match
+            return candidates
+                .map(row => ({ row, score: similarityRatio(normalizedInput, normalizeName(row['STOCKIST NAME'])) }))
+                .filter(m => m.score >= FUZZY_THRESHOLD)
+                .sort((a, b) => b.score - a.score)
+                .map(m => m.row);
+        }
+
         async function getRepresentativeDetails(code, name) {
             const cacheKey = String(code || '').toUpperCase() + '||' + String(name || '').toUpperCase();
 
@@ -1269,6 +1361,13 @@ select.appendChild(opt);
                 rows = await runRepQuerySafe(
                     `select ${selectCols} where ${REP_COL.STOCKIST_NAME} = '${escQueryLiteral(name)}'`
                 );
+
+                // 3. Some stockists don't have a Stockist Code at all. For those,
+                //    fall back to a ~90% fuzzy name match (handles spelling
+                //    differences, extra spaces/punctuation, etc.).
+                if (!rows.length && !code) {
+                    rows = await fuzzyMatchRepresentativeByName(name);
+                }
             }
 
             // A stockist can have more than one representative row (e.g. different
@@ -1309,21 +1408,33 @@ select.appendChild(opt);
                 .replace(/>/g, '&gt;');
         }
 
-        // Builds the <tr> row for a Representative Details table from
-        // {SM: [...], RSM: [...], ZSM: [...]}. When a stockist has more than one
-        // representative for a role, all distinct names are shown comma-separated
-        // in that column, e.g. SM: "A, B".
-        function renderRepDetailsRows(rep) {
-            if (!rep || (!rep.SM.length && !rep.RSM.length && !rep.ZSM.length)) {
-                return '<tr><td colspan="3" style="text-align:center;color:#94a3b8;">Not found</td></tr>';
+        // Builds a full Representative Details table from
+        // {SM: [...], RSM: [...], ZSM: [...]}. Only columns that actually have
+        // data are shown — e.g. if a stockist only has an SM on file, just the
+        // SM column is rendered (no empty RSM/ZSM columns). When a stockist has
+        // more than one representative for a role, all distinct names are shown
+        // comma-separated in that column, e.g. SM: "A, B".
+        function renderRepDetailsTable(rep) {
+            const cols = [];
+            if (rep) {
+                if (rep.SM.length) cols.push({ label: 'SM', value: rep.SM.join(', ') });
+                if (rep.RSM.length) cols.push({ label: 'RSM', value: rep.RSM.join(', ') });
+                if (rep.ZSM.length) cols.push({ label: 'ZSM', value: rep.ZSM.join(', ') });
             }
-            const fmt = list => list.length ? escHtml(list.join(', ')) : '-';
+
+            if (!cols.length) {
+                return '<div style="padding:10px;color:#94a3b8;font-size:0.85rem;">Not found</div>';
+            }
+
             return `
-                <tr>
-                    <td>${fmt(rep.SM)}</td>
-                    <td>${fmt(rep.RSM)}</td>
-                    <td>${fmt(rep.ZSM)}</td>
-                </tr>
+                <table class="product-table rep-details-table">
+                    <thead>
+                        <tr>${cols.map(c => `<th>${escHtml(c.label)}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        <tr>${cols.map(c => `<td>${escHtml(c.value)}</td>`).join('')}</tr>
+                    </tbody>
+                </table>
             `;
         }
 
@@ -1339,15 +1450,15 @@ select.appendChild(opt);
             await Promise.all(nodes.map(async (node) => {
                 const code = node.getAttribute('data-rep-code') || '';
                 const name = node.getAttribute('data-rep-name') || '';
-                const bodyEl = node.querySelector('.rep-details-body');
+                const containerEl = node.querySelector('.rep-details-container');
 
                 try {
                     const reps = await getRepresentativeDetails(code, name);
-                    if (bodyEl) bodyEl.innerHTML = renderRepDetailsRows(reps);
+                    if (containerEl) containerEl.innerHTML = renderRepDetailsTable(reps);
                     node.setAttribute('data-rep-status', 'done');
                 } catch (err) {
                     console.warn('Representative details lookup failed:', { code, name, error: err });
-                    if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#dc2626;">Lookup failed</td></tr>';
+                    if (containerEl) containerEl.innerHTML = '<div style="padding:10px;color:#dc2626;font-size:0.85rem;">Lookup failed</div>';
                     node.setAttribute('data-rep-status', 'error');
                 }
             }));
@@ -1783,15 +1894,8 @@ Download
 
                         <div class="section rep-details-section" data-rep-status="pending" data-rep-code="${escAttr(firstResult['STOCKIST CODE'])}" data-rep-name="${escAttr(firstResult['STOCKIST NAME'])}">
                             <div class="section-header">Representative Details</div>
-                            <div class="product-table-container">
-                                <table class="product-table rep-details-table">
-                                    <thead>
-                                        <tr><th>SM</th><th>RSM</th><th>ZSM</th></tr>
-                                    </thead>
-                                    <tbody class="rep-details-body">
-                                        <tr><td colspan="3" style="text-align:center;">Loading...</td></tr>
-                                    </tbody>
-                                </table>
+                            <div class="product-table-container rep-details-container">
+                                <div style="padding:10px;color:#64748b;font-size:0.85rem;">Loading...</div>
                             </div>
                         </div>
 
@@ -2228,7 +2332,7 @@ let grandTotal=0;
 // Look up representatives for this stockist (some stockists have more than
 // one SM/RSM/ZSM), so the printed document reflects every distinct name.
 const repDetails = await getRepresentativeDetails(r['STOCKIST CODE'], r['STOCKIST NAME']);
-const repTableRows = renderRepDetailsRows(repDetails);
+const repDetailsHtml = renderRepDetailsTable(repDetails);
 
 const tableRows = rows.map((row,i)=>{
 
@@ -2306,18 +2410,7 @@ REF: ${r['SR Ref No.']}
 
 <!-- REPRESENTATIVE DETAILS -->
 <div style="font-size:13px;font-weight:700;color:#0f172a;margin:10px 0 4px;">Representative Details</div>
-<table class="product-table">
-<thead>
-<tr>
-<th>SM</th>
-<th>RSM</th>
-<th>ZSM</th>
-</tr>
-</thead>
-<tbody>
-${repTableRows}
-</tbody>
-</table>
+${repDetailsHtml}
 
 
 <!-- PRODUCT TABLE -->
