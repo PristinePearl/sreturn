@@ -727,6 +727,75 @@ color:#1e293b;
     </style>
 </head>
 <body>
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen" style="
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 100%);
+    display:flex;align-items:center;justify-content:center;
+    z-index:99999;
+">
+<div style="
+    background:white;border-radius:16px;padding:40px 36px;
+    width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.4);
+    text-align:center;
+">
+    <img src="https://www.pristinepearlpharma.in/images/alt-logo.png"
+         style="height:52px;margin-bottom:16px;">
+    <div style="font-size:1.25rem;font-weight:700;color:#0f172a;margin-bottom:4px;">
+        PRISTINE PEARL PHARMA
+    </div>
+    <div style="font-size:0.82rem;color:#64748b;margin-bottom:28px;">
+        Sales Return Viewer — Restricted Access
+    </div>
+    <input id="lockInput" type="password" placeholder="Enter password"
+        style="
+            width:100%;padding:11px 14px;border:1.5px solid #d1d5db;
+            border-radius:8px;font-size:0.95rem;outline:none;
+            box-sizing:border-box;margin-bottom:10px;
+            transition:border-color 0.2s;
+        "
+        onkeydown="if(event.key==='Enter')unlockApp()"
+        onfocus="this.style.borderColor='#0891b2'"
+        onblur="this.style.borderColor='#d1d5db'"
+    >
+    <div id="lockError" style="
+        color:#dc2626;font-size:0.8rem;margin-bottom:8px;
+        min-height:18px;
+    "></div>
+    <button onclick="unlockApp()" style="
+        width:100%;padding:12px;
+        background:linear-gradient(135deg,#1e3a8a 0%,#0891b2 100%);
+        color:white;border:none;border-radius:8px;
+        font-size:0.95rem;font-weight:600;cursor:pointer;
+    ">Unlock</button>
+</div>
+</div>
+
+<script>
+async function unlockApp(){
+    const val = document.getElementById('lockInput').value;
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val));
+    const hex = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    if(hex === '8163826ad3e28c3eaa10bcdf7bf21f45e1a6435236729dc82df33922a1f90907'){
+        document.getElementById('lockScreen').remove();
+        setTimeout(()=>{
+            const sid = document.getElementById('sheetId').value.trim();
+            if(sid) populateStockistsAndProducts(sid);
+        },300);
+    } else {
+        const err = document.getElementById('lockError');
+        err.textContent = 'Incorrect password. Try again.';
+        document.getElementById('lockInput').value='';
+        document.getElementById('lockInput').focus();
+        setTimeout(()=>err.textContent='',2500);
+    }
+}
+document.addEventListener('DOMContentLoaded',()=>{
+    setTimeout(()=>document.getElementById('lockInput')?.focus(),100);
+});
+</script>
+
     <div class="main-container">
 <div class="left-panel">
     <div class="header">
@@ -739,6 +808,7 @@ color:#1e293b;
     <div class="tabs">
         <button class="tab-button active" onclick="openTab(event, 'srSearch')">🔍 Single SR Search</button>
         <button class="tab-button" onclick="openTab(event, 'dateStockist')">📜 Stockist/Date Report</button>
+        <button class="tab-button" onclick="openTab(event, 'againstInv')">🧾 Against Inv</button>
         <button class="tab-button" onclick="openTab(event, 'productAnalysis')">📦 Product Analysis</button>
         <button class="tab-button" onclick="openTab(event, 'expiryQuality')">⚠️ Expiry/Quality Report</button>
         <button class="tab-button" onclick="openTab(event, 'graphicalReports')">📊 Graphical Reports</button>
@@ -787,6 +857,29 @@ color:#1e293b;
                 </div>
                 <button type="submit" class="btn">Go</button>
                 <button type="button" class="btn btn-secondary" id="exportAllBtn" style="display: none;">EXPORT ALL</button>
+            </form>
+        </div>
+
+
+        <div id="againstInv" class="tab-content">
+            <form class="search-form" id="againstInvForm">
+                 <h3 style="font-size: 1rem; margin-bottom: 5px; color: #0f172a;">Against Inv Report (Dates Optional)</h3>
+                <div class="form-group">
+                    <label for="againstInvFromDate">From Date (R.GEN DATE):</label>
+                    <input type="date" id="againstInvFromDate">
+                </div>
+                <div class="form-group">
+                    <label for="againstInvToDate">To Date (R.GEN DATE):</label>
+                    <input type="date" id="againstInvToDate">
+                </div>
+                <div class="form-group">
+                    <label for="againstInvStockist">Stockist Name:</label>
+                    <select id="againstInvStockist">
+                        <option value="">All Stockists</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Go</button>
+                <button type="button" class="btn btn-secondary" id="exportAgainstInvBtn" style="display: none;">EXPORT ALL</button>
             </form>
         </div>
 
@@ -1082,6 +1175,160 @@ select.appendChild(opt);
         }
 
 
+        // --- Against Inv (invoice matching) ---
+
+        const INVOICE_SHEET_ID = '1tkd24DCcRbsEbhQu7yK26Vy138z2xV_RaDFUAt_p8FA';
+        const INVOICE_SHEET_GID = '936969361';
+
+        // Fixed column letters for the Invoice sheet, per its known header order:
+        // A:INV NO  B:INV DATE  C:Month  D:STOCKIST CODE  E:STOCKIST NAME  F:AREA
+        // G:STATE  H:Depot  I:PRODUCT  J:PRODUCT CODE  K:Gst  L:BATCH  M:MFG DATE
+        // N:EXPIRY  O:MRP  P:QTY  Q:FQTY  R:RATE  S:TOTAL AMOUNT  T:INVOICE TOTAL
+        const INV_COL = { STOCKIST_CODE: 'D', STOCKIST_NAME: 'E' };
+
+        // Escape a value for safe use inside an HTML attribute (data-* attrs)
+        function escAttr(val) {
+            return String(val ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        // Escape a value for safe use inside a Google Visualization Query Language string literal
+        function escQueryLiteral(val) {
+            return String(val ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
+        // The Invoice sheet is far too large (10M+ rows) to ever download to the
+        // browser, so instead of fetching the whole sheet we ask Google's
+        // Visualization Query API to filter server-side and return only one
+        // stockist's rows at a time.
+        // https://developers.google.com/chart/interactive/docs/querylanguage
+        async function runInvoiceQuery(tq) {
+            const params = new URLSearchParams({ gid: INVOICE_SHEET_GID, headers: '1', tqx: 'out:csv', tq: tq });
+            const url = `https://docs.google.com/spreadsheets/d/${INVOICE_SHEET_ID}/gviz/tq?${params.toString()}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                headers: { 'Accept': 'text/csv,text/plain,*/*' }
+            });
+            if (!response.ok) throw new Error(`Invoice sheet query failed (HTTP ${response.status})`);
+            const csvText = await response.text();
+            return parseCSV(csvText);
+        }
+
+        // Same as runInvoiceQuery but swallows errors (bad/unsupported query) and
+        // returns an empty array instead, so callers can just try the next fallback.
+        async function runInvoiceQuerySafe(tq) {
+            try {
+                return await runInvoiceQuery(tq);
+            } catch (err) {
+                console.warn('Invoice query failed:', tq, err);
+                return [];
+            }
+        }
+
+        // Session cache so switching between products for the same stockist doesn't
+        // re-query the sheet every time.
+        window.stockistInvoiceCache = new Map();
+
+        async function getStockistInvoiceRows(code, name) {
+            const cacheKey = code.toUpperCase() + '||' + name.toUpperCase();
+            if (window.stockistInvoiceCache.has(cacheKey)) return window.stockistInvoiceCache.get(cacheKey);
+
+            let rows = [];
+            if (code) {
+                rows = await runInvoiceQuerySafe(`select * where ${INV_COL.STOCKIST_CODE} = '${escQueryLiteral(code)}'`);
+                // Fall back to a numeric-literal comparison in case the code column is
+                // stored as a number rather than text on the Invoice sheet.
+                if (!rows.length && /^\d+$/.test(code)) {
+                    rows = await runInvoiceQuerySafe(`select * where ${INV_COL.STOCKIST_CODE} = ${code}`);
+                }
+            }
+            if (!rows.length && name) {
+                rows = await runInvoiceQuerySafe(`select * where ${INV_COL.STOCKIST_NAME} = '${escQueryLiteral(name)}'`);
+            }
+
+            window.stockistInvoiceCache.set(cacheKey, rows);
+            return rows;
+        }
+
+        function invRowsToHtml(rows) {
+            return rows.map(r => `
+                <tr class="${getExpiryClass(r['EXPIRY'])}">
+                    <td>${r['INV NO'] || '-'}</td>
+                    <td>${r['INV DATE'] || '-'}</td>
+                    <td>${r['BATCH'] || '-'}</td>
+                    <td>${r['EXPIRY'] || '-'}</td>
+                    <td style="text-align: right;">₹${r['MRP'] || '-'}</td>
+                    <td style="text-align: center;">${r['QTY'] || '-'}</td>
+                    <td style="text-align: center;">${r['FQTY'] || '-'}</td>
+                    <td style="text-align: right;">₹${r['RATE'] || '-'}</td>
+                </tr>`).join('');
+        }
+
+        function renderAgainstInvResults(matchBatchRows, otherBatchRows, batch) {
+            const theadRow = `<tr><th>Inv No.</th><th>Inv Date</th><th>Batch</th><th>Expiry</th>
+                <th style="text-align:right">MRP</th><th style="text-align:center">Qty</th>
+                <th style="text-align:center">FQty</th><th style="text-align:right">Rate</th></tr>`;
+
+            let html = `<h3 style="color:#0f172a;margin:0 0 8px;font-size:0.95rem">✅ Matching Batch${batch ? ' (' + batch + ')' : ''} — ${matchBatchRows.length} record(s)</h3>`;
+            html += matchBatchRows.length
+                ? `<table class="product-table"><thead>${theadRow}</thead><tbody>${invRowsToHtml(matchBatchRows)}</tbody></table>`
+                : `<div class="no-results" style="padding:10px 0">No invoice line matches this exact batch.</div>`;
+
+            html += `<h3 style="color:#0f172a;margin:18px 0 8px;font-size:0.95rem">🔁 Different Batches (Same Product) — ${otherBatchRows.length} record(s)</h3>`;
+            html += otherBatchRows.length
+                ? `<table class="product-table"><thead>${theadRow}</thead><tbody>${invRowsToHtml(otherBatchRows)}</tbody></table>`
+                : `<div class="no-results" style="padding:10px 0">No other batches of this product found in the Invoice sheet.</div>`;
+
+            return html;
+        }
+
+        // Triggered by the "Fetch Inv" button next to a product row
+        async function fetchAgainstInv(btn) {
+            const code = (btn.dataset.code || '').trim();
+            const name = (btn.dataset.name || '').trim();
+            const product = (btn.dataset.product || '').trim();
+            const batch = (btn.dataset.batch || '').trim();
+
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Fetching...';
+
+            try {
+                const stockistRows = await getStockistInvoiceRows(code, name);
+
+                if (stockistRows.length === 0) {
+                    showPopup(`<div class="no-results">No invoice records found for stockist "${name || code}" in the Invoice sheet.</div>`, `Against Inv: ${name || code}`);
+                    return;
+                }
+
+                const productRows = stockistRows.filter(r => (r['PRODUCT'] || '').trim().toUpperCase() === product.toUpperCase());
+
+                if (productRows.length === 0) {
+                    showPopup(`<div class="no-results">Stockist matched, but no invoice entries found for product "${product}".</div>`, `Against Inv: ${name || code} — ${product}`);
+                    return;
+                }
+
+                const matchBatchRows = batch
+                    ? productRows.filter(r => (r['BATCH'] || '').trim().toUpperCase() === batch.toUpperCase())
+                    : [];
+                const matchSet = new Set(matchBatchRows);
+                const otherBatchRows = productRows.filter(r => !matchSet.has(r));
+
+                showPopup(renderAgainstInvResults(matchBatchRows, otherBatchRows, batch), `Against Inv: ${name || code} — ${product}`);
+
+            } catch (err) {
+                showPopup(`<div class="error">Error fetching invoice data: ${err.message}</div>`, 'Against Inv — Error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
         // --- Export Functions ---
 
         // Function to export data to Excel XLS format
@@ -1178,7 +1425,7 @@ function getExpiryClass(expiryStr){
 
         // --- UI Rendering Functions ---
 
-        function generateResultCardHtml(results, isExpandedView = false) {
+        function generateResultCardHtml(results, isExpandedView = false, withFetchInv = false) {
             
             const firstResult = results[0];
             
@@ -1199,6 +1446,17 @@ function getExpiryClass(expiryStr){
                 const taxableAmt = (parseFloat(result['TAXABLE'].replace(/[^0-9.-]+/g,"")) || 0).toFixed(2);
                 const gstValue = (parseFloat(result['GST VALUE'].replace(/[^0-9.-]+/g,"")) || 0).toFixed(2);
                 
+                const fetchInvCell = withFetchInv ? `
+                        <td>
+                            <button type="button" class="btn btn-secondary fetch-inv-btn"
+                                style="margin-top:0;padding:4px 10px;font-size:0.75rem;white-space:nowrap"
+                                data-code="${escAttr(result['STOCKIST CODE'])}"
+                                data-name="${escAttr(result['STOCKIST NAME'])}"
+                                data-product="${escAttr(result['PRODUCT'])}"
+                                data-batch="${escAttr(result['BATCH'])}"
+                                onclick="fetchAgainstInv(this)">Fetch Inv</button>
+                        </td>` : '';
+
                 return `
 <tr class="${getExpiryClass(result['EXPIRY'])}">
                         <td>${index + 1}</td>
@@ -1213,6 +1471,7 @@ function getExpiryClass(expiryStr){
                         <td style="text-align: right;">₹${lineTotal}</td>
 <td>${result['STATUS'] || '-'}</td>
                         <td>${result['REMARKS'] || '-'}</td>
+                        ${fetchInvCell}
                     </tr>
                 `;
             }).join('');
@@ -1325,6 +1584,7 @@ Download
                                             <th style="text-align: right;">Total Value</th>
 <th>Status</th>
                                             <th>Remarks</th>
+                                            ${withFetchInv ? '<th>Action</th>' : ''}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1336,6 +1596,7 @@ Download
 <td style="text-align: right;">₹${totalGrandAmount}</td>
 <td></td>
 <td></td>
+${withFetchInv ? '<td></td>' : ''}
 </tr>
 
                                     </tbody>
@@ -2117,6 +2378,7 @@ applyExpiryHighlighting();
         function hideAllExportButtons() {
             document.getElementById('exportBtn').style.display = 'none';
             document.getElementById('exportAllBtn').style.display = 'none';
+            document.getElementById('exportAgainstInvBtn').style.display = 'none';
             document.getElementById('exportProductBtn').style.display = 'none';
             document.getElementById('exportExpiryBtn').style.display = 'none';
             document.getElementById('exportChartBtn').style.display = 'none';
@@ -2176,6 +2438,126 @@ document.getElementById('printPdfBtn').style.display='none';
                 exportToCSV(lastFilterResults, `SR_DateStockist_Data_${today}`);
             } else {
                  alert("No data to export. Please run a report search first.");
+            }
+        });
+        document.getElementById('exportAgainstInvBtn').addEventListener('click', async function() {
+            if (!lastFilterResults.length) {
+                alert("No data to export. Please run a report search first.");
+                return;
+            }
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Fetching Invoice Data...';
+            try {
+                // Collect unique stockists
+                const stockistMap = {};
+                lastFilterResults.forEach(r => {
+                    const key = (r['STOCKIST CODE'] || '').toUpperCase() + '||' + (r['STOCKIST NAME'] || '').toUpperCase();
+                    if (!stockistMap[key]) stockistMap[key] = { code: r['STOCKIST CODE'] || '', name: r['STOCKIST NAME'] || '' };
+                });
+
+                // Fetch invoice rows for all stockists in parallel (uses cache if already fetched)
+                const invByStockist = {};
+                await Promise.all(Object.entries(stockistMap).map(async ([key, s]) => {
+                    const rows = await getStockistInvoiceRows(s.code, s.name);
+                    invByStockist[key] = rows;
+                }));
+
+                // Build merged export rows: each SR row joined with its matching invoice line(s)
+                const merged = [];
+                lastFilterResults.forEach(sr => {
+                    const key = (sr['STOCKIST CODE'] || '').toUpperCase() + '||' + (sr['STOCKIST NAME'] || '').toUpperCase();
+                    const invRows = invByStockist[key] || [];
+
+                    // Match by PRODUCT + BATCH (exact, case-insensitive)
+                    const matchingInv = invRows.filter(inv =>
+                        (inv['PRODUCT'] || '').trim().toUpperCase() === (sr['PRODUCT'] || '').trim().toUpperCase() &&
+                        (inv['BATCH'] || '').trim().toUpperCase() === (sr['BATCH'] || '').trim().toUpperCase()
+                    );
+
+                    if (matchingInv.length > 0) {
+                        matchingInv.forEach(inv => {
+                            merged.push({
+                                // SR columns
+                                'SR Ref No.': sr['SR Ref No.'] || '',
+                                'R.GEN DATE': sr['R.GEN DATE'] || '',
+                                'STOCKIST CODE': sr['STOCKIST CODE'] || '',
+                                'STOCKIST NAME': sr['STOCKIST NAME'] || '',
+                                'AREA': sr['AREA'] || '',
+                                'STATE': sr['STATE'] || '',
+                                'C. INV NO.': sr['C. INV NO.'] || '',
+                                'C. INV DATE': sr['C. INV DATE'] || '',
+                                'CN NO.': sr['CN NO.'] || '',
+                                'CN DATE': sr['CN DATE'] || '',
+                                'PRODUCT': sr['PRODUCT'] || '',
+                                'BATCH': sr['BATCH'] || '',
+                                'EXPIRY': sr['EXPIRY'] || '',
+                                'SR QTY': sr['QTY'] || '',
+                                'SR FQTY': sr['FQTY'] || '',
+                                'SR RATE': sr['RATE'] || '',
+                                'SR TAXABLE': sr['TAXABLE'] || '',
+                                'SR GST VALUE': sr['GST VALUE'] || '',
+                                'SR TOTAL': sr['TOTAL'] || '',
+                                'STATUS': sr['STATUS'] || '',
+                                'REMARKS': sr['REMARKS'] || '',
+                                // Against Invoice columns
+                                'INV NO.': inv['INV NO'] || '',
+                                'INV DATE': inv['INV DATE'] || '',
+                                'INV BATCH': inv['BATCH'] || '',
+                                'INV EXPIRY': inv['EXPIRY'] || '',
+                                'INV MRP': inv['MRP'] || '',
+                                'INV QTY': inv['QTY'] || '',
+                                'INV FQTY': inv['FQTY'] || '',
+                                'INV RATE': inv['RATE'] || '',
+                                'INV TOTAL': inv['TOTAL AMOUNT'] || '',
+                                'INV TOTAL (INV LEVEL)': inv['INVOICE TOTAL'] || '',
+                            });
+                        });
+                    } else {
+                        // No matching invoice line — still export the SR row with blank inv columns
+                        merged.push({
+                            'SR Ref No.': sr['SR Ref No.'] || '',
+                            'R.GEN DATE': sr['R.GEN DATE'] || '',
+                            'STOCKIST CODE': sr['STOCKIST CODE'] || '',
+                            'STOCKIST NAME': sr['STOCKIST NAME'] || '',
+                            'AREA': sr['AREA'] || '',
+                            'STATE': sr['STATE'] || '',
+                            'C. INV NO.': sr['C. INV NO.'] || '',
+                            'C. INV DATE': sr['C. INV DATE'] || '',
+                            'CN NO.': sr['CN NO.'] || '',
+                            'CN DATE': sr['CN DATE'] || '',
+                            'PRODUCT': sr['PRODUCT'] || '',
+                            'BATCH': sr['BATCH'] || '',
+                            'EXPIRY': sr['EXPIRY'] || '',
+                            'SR QTY': sr['QTY'] || '',
+                            'SR FQTY': sr['FQTY'] || '',
+                            'SR RATE': sr['RATE'] || '',
+                            'SR TAXABLE': sr['TAXABLE'] || '',
+                            'SR GST VALUE': sr['GST VALUE'] || '',
+                            'SR TOTAL': sr['TOTAL'] || '',
+                            'STATUS': sr['STATUS'] || '',
+                            'REMARKS': sr['REMARKS'] || '',
+                            'INV NO.': '',
+                            'INV DATE': '',
+                            'INV BATCH': '',
+                            'INV EXPIRY': '',
+                            'INV MRP': '',
+                            'INV QTY': '',
+                            'INV FQTY': '',
+                            'INV RATE': '',
+                            'INV TOTAL': '',
+                            'INV TOTAL (INV LEVEL)': '',
+                        });
+                    }
+                });
+
+                const today = new Date().toISOString().slice(0, 10);
+                exportToCSV(merged, `SR_AgainstInv_Merged_${today}`);
+            } catch (err) {
+                alert('Export failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'EXPORT ALL';
             }
         });
         document.getElementById('exportProductBtn').addEventListener('click', function() {
@@ -2325,6 +2707,7 @@ document.getElementById('exportExpiryBtn').style.display='block';
                                 <div style="flex-basis: 70%;">
                                     <div class="sr-ref" style="font-size: 1.2rem; font-weight: 700; color: #0f172a; line-height: 1.2;">
                                         ${first['STOCKIST NAME'] || 'N/A'}
+                                        <span style="font-size: 0.75rem; font-weight: 600; color: #0891b2; margin-left: 8px; white-space: nowrap;">Uploaded: ${first['R.GEN DATE'] || '-'}</span>
                                     </div>
                                     <div style="font-size:0.9rem; font-weight: 500; color:#374151; margin-top: 2px;">
                                         SR: ${srRef} / C. Inv: ${first['C. INV NO.'] || '-'}
@@ -2352,6 +2735,111 @@ applyExpiryHighlighting();
                 document.getElementById('exportAllBtn').style.display = 'none';
             }
         });
+
+        // Handle Against Inv Report (Stockist/Date report + per-product "Fetch Inv" lookup)
+        document.getElementById('againstInvForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const sheetId = document.getElementById('sheetId').value.trim();
+            const fromDate = document.getElementById('againstInvFromDate').value;
+            const toDate = document.getElementById('againstInvToDate').value;
+            const stockist = document.getElementById('againstInvStockist').value.trim();
+            const resultsSection = document.getElementById('resultsSection');
+
+            hideAllExportButtons();
+            destroyCharts();
+
+            lastFilterResults = [];
+            window.groupedResults = {};
+
+            if (!sheetId) {
+                resultsSection.innerHTML = '<div class="error">Please enter Google Sheet ID.</div>';
+                return;
+            }
+
+            const isDateRangeSet = fromDate && toDate;
+            let from = null;
+            let to = null;
+            if (isDateRangeSet) {
+                from = new Date(fromDate);
+                from.setHours(0, 0, 0, 0);
+                to = new Date(toDate);
+                to.setHours(23, 59, 59, 999);
+            }
+
+            resultsSection.innerHTML = '<div class="loading">Searching by date & stockist...</div>';
+
+            try {
+                const data = await fetchSheetData(sheetId);
+
+                const filtered = data.filter(row => {
+                    if (stockist && row['STOCKIST NAME'] !== stockist) return false;
+
+                    if (isDateRangeSet) {
+                        const uploaded = parseDate(row['R.GEN DATE']);
+                        if (!uploaded || isNaN(uploaded.getTime())) return false;
+                        if (uploaded.getTime() < from.getTime() || uploaded.getTime() > to.getTime()) return false;
+                    }
+
+                    return true;
+                });
+
+                lastFilterResults = filtered;
+
+                if (filtered.length === 0) {
+                    resultsSection.innerHTML = '<div class="no-results">No records found for given filter.</div>';
+                    return;
+                }
+
+                document.getElementById('exportAgainstInvBtn').style.display = 'block';
+
+                // Group by SR Ref No (For the detailed card view)
+                const grouped = {};
+                filtered.forEach(row => {
+                    const key = row['SR Ref No.'];
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(row);
+                });
+
+                let html = "";
+                for (const [srRef, rows] of Object.entries(grouped)) {
+                    const first = rows[0];
+                    const totalGrandAmount = rows.reduce((sum, row) => sum + (parseFloat(row['TOTAL'].replace(/[^0-9.-]+/g,"")) || 0), 0).toFixed(2);
+                    const expandedContent = generateResultCardHtml(rows, true, true); // withFetchInv = true
+
+                    html += `
+                        <div class="result-card" id="card-${srRef}">
+                            <div class="result-header" style="flex-wrap: wrap; justify-content: space-between; align-items: flex-start;">
+                                <div style="flex-basis: 70%;">
+                                    <div class="sr-ref" style="font-size: 1.2rem; font-weight: 700; color: #0f172a; line-height: 1.2;">
+                                        ${first['STOCKIST NAME'] || 'N/A'}
+                                        <span style="font-size: 0.75rem; font-weight: 600; color: #0891b2; margin-left: 8px; white-space: nowrap;">Uploaded: ${first['R.GEN DATE'] || '-'}</span>
+                                    </div>
+                                    <div style="font-size:0.9rem; font-weight: 500; color:#374151; margin-top: 2px;">
+                                        SR: ${srRef} / C. Inv: ${first['C. INV NO.'] || '-'}
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                                    <div class="total-amount" style="margin-top: 2px;">Total: ₹${totalGrandAmount}</div>
+                                    <button class="btn btn-secondary" style="margin-top: 0;" onclick="toggleExpand('${srRef}')">Expand</button>
+                                </div>
+                            </div>
+                            <div id="details-${srRef}" style="display:none; padding-top: 15px;">
+                                ${expandedContent}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                resultsSection.innerHTML = generateSummaryCards(filtered) + html;
+                applyExpiryHighlighting();
+                window.groupedResults = grouped;
+
+            } catch (err) {
+                resultsSection.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
+                document.getElementById('exportAgainstInvBtn').style.display = 'none';
+            }
+        });
+
 document.getElementById('printPdfBtn').addEventListener('click',()=>{
 const content=document.getElementById('resultsSection').innerHTML;
 
@@ -3212,7 +3700,8 @@ const stateBreakdown = Object.entries(stateValueMap)
                     document.getElementById('stockistSelect'), 
                     document.getElementById('expiryStockistSelect'),
                     document.getElementById('chartStockistSelect'), // Graphical Report
-document.getElementById('printStockist')
+document.getElementById('printStockist'),
+document.getElementById('againstInvStockist')
                 ];
                 
                 stockistSelects.forEach(select => {
@@ -3274,11 +3763,8 @@ document.getElementById('printStockist')
 
         // Trigger dropdown population and set default tab on page load
         document.addEventListener('DOMContentLoaded', () => {
-            const sheetId = document.getElementById('sheetId').value.trim();
-            if (sheetId) {
-                setTimeout(() => populateStockistsAndProducts(sheetId), 500);
-            }
-             // Ensure the default tab content is displayed
+            // Do NOT auto-populate — handled by unlockApp() after password entry
+            // Ensure the default tab content is displayed
             document.getElementById('srSearch').style.display = 'block';
             document.getElementById('srSearch').classList.add('active');
             
@@ -3475,6 +3961,8 @@ window.sortProductAnalysis = sortProductAnalysis;
 window.toggleProductSort = toggleProductSort;
 window.sortExpiryReport = sortExpiryReport;
 window.toggleExpirySort = toggleExpirySort;
+window.fetchAgainstInv = fetchAgainstInv;
+window.getStockistInvoiceRows = getStockistInvoiceRows;
     </script>
 
 <div id="drillPopup" style="
