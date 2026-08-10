@@ -727,75 +727,65 @@ color:#1e293b;
     </style>
 </head>
 <body>
-
-<!-- LOCK SCREEN -->
-<div id="lockScreen" style="
-    position:fixed;top:0;left:0;width:100%;height:100%;
-    background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 100%);
-    display:flex;align-items:center;justify-content:center;
-    z-index:99999;
-">
-<div style="
-    background:white;border-radius:16px;padding:40px 36px;
-    width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.4);
-    text-align:center;
-">
-    <img src="https://www.pristinepearlpharma.in/images/alt-logo.png"
-         style="height:52px;margin-bottom:16px;">
-    <div style="font-size:1.25rem;font-weight:700;color:#0f172a;margin-bottom:4px;">
-        PRISTINE PEARL PHARMA
+    <div id="passwordGateOverlay" style="position:fixed; inset:0; z-index:99999; background:linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); display:flex; align-items:center; justify-content:center; font-family:'Inter','Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;">
+        <div style="background:#ffffff; border-radius:12px; padding:40px 36px; width:100%; max-width:360px; box-shadow:0 20px 50px rgba(0,0,0,0.35); text-align:center;">
+            <img src="https://www.pristinepearlpharma.in/images/alt-logo.png" alt="" style="height:40px; margin-bottom:18px;">
+            <h2 style="margin:0 0 6px 0; color:#0f172a; font-size:1.25rem;">Protected Report</h2>
+            <p style="margin:0 0 20px 0; color:#64748b; font-size:0.9rem;">Enter password to continue</p>
+            <input type="password" id="pgPasswordInput" placeholder="Password" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.95rem; outline:none; box-sizing:border-box;">
+            <div id="pgError" style="color:#dc2626; font-size:0.85rem; margin-top:8px; min-height:18px;"></div>
+            <button id="pgSubmitBtn" style="margin-top:10px; width:100%; padding:10px 12px; border:none; border-radius:8px; background:#1e3a8a; color:#fff; font-size:0.95rem; font-weight:600; cursor:pointer;">Unlock</button>
+        </div>
     </div>
-    <div style="font-size:0.82rem;color:#64748b;margin-bottom:28px;">
-        Sales Return Viewer — Restricted Access
-    </div>
-    <input id="lockInput" type="password" placeholder="Enter password"
-        style="
-            width:100%;padding:11px 14px;border:1.5px solid #d1d5db;
-            border-radius:8px;font-size:0.95rem;outline:none;
-            box-sizing:border-box;margin-bottom:10px;
-            transition:border-color 0.2s;
-        "
-        onkeydown="if(event.key==='Enter')unlockApp()"
-        onfocus="this.style.borderColor='#0891b2'"
-        onblur="this.style.borderColor='#d1d5db'"
-    >
-    <div id="lockError" style="
-        color:#dc2626;font-size:0.8rem;margin-bottom:8px;
-        min-height:18px;
-    "></div>
-    <button onclick="unlockApp()" style="
-        width:100%;padding:12px;
-        background:linear-gradient(135deg,#1e3a8a 0%,#0891b2 100%);
-        color:white;border:none;border-radius:8px;
-        font-size:0.95rem;font-weight:600;cursor:pointer;
-    ">Unlock</button>
-</div>
-</div>
+    <script>
+    (function() {
+        // Password is never stored in plaintext; only its SHA-256 hash is checked.
+        var PG_HASH = "8163826ad3e28c3eaa10bcdf7bf21f45e1a6435236729dc82df33922a1f90907";
 
-<script>
-async function unlockApp(){
-    const val = document.getElementById('lockInput').value;
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val));
-    const hex = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    if(hex === '8163826ad3e28c3eaa10bcdf7bf21f45e1a6435236729dc82df33922a1f90907'){
-        document.getElementById('lockScreen').remove();
-        setTimeout(()=>{
-            const sid = document.getElementById('sheetId').value.trim();
-            if(sid) populateStockistsAndProducts(sid);
-        },300);
-    } else {
-        const err = document.getElementById('lockError');
-        err.textContent = 'Incorrect password. Try again.';
-        document.getElementById('lockInput').value='';
-        document.getElementById('lockInput').focus();
-        setTimeout(()=>err.textContent='',2500);
-    }
-}
-document.addEventListener('DOMContentLoaded',()=>{
-    setTimeout(()=>document.getElementById('lockInput')?.focus(),100);
-});
-</script>
+        async function pgSha256(text) {
+            var enc = new TextEncoder().encode(text);
+            var buf = await crypto.subtle.digest('SHA-256', enc);
+            return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+        }
 
+        function pgTryUnlock() {
+            var input = document.getElementById('pgPasswordInput');
+            var errEl = document.getElementById('pgError');
+            var val = input.value;
+            pgSha256(val).then(function(hash) {
+                if (hash === PG_HASH) {
+                    var overlay = document.getElementById('passwordGateOverlay');
+                    overlay.style.transition = 'opacity 0.25s ease';
+                    overlay.style.opacity = '0';
+                    setTimeout(function() { overlay.remove(); }, 250);
+                    try { sessionStorage.setItem('pgUnlocked', '1'); } catch (e) {}
+                } else {
+                    errEl.textContent = 'Incorrect password. Try again.';
+                    input.value = '';
+                    input.focus();
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                if (sessionStorage.getItem('pgUnlocked') === '1') {
+                    var overlay = document.getElementById('passwordGateOverlay');
+                    if (overlay) overlay.remove();
+                    return;
+                }
+            } catch (e) {}
+
+            var input = document.getElementById('pgPasswordInput');
+            var btn = document.getElementById('pgSubmitBtn');
+            btn.addEventListener('click', pgTryUnlock);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') pgTryUnlock();
+            });
+            input.focus();
+        });
+    })();
+    </script>
     <div class="main-container">
 <div class="left-panel">
     <div class="header">
@@ -1178,7 +1168,11 @@ select.appendChild(opt);
         // --- Against Inv (invoice matching) ---
 
         const INVOICE_SHEET_ID = '1tkd24DCcRbsEbhQu7yK26Vy138z2xV_RaDFUAt_p8FA';
-        const INVOICE_SHEET_GID = '936969361';
+        const INVOICE_SHEETS = [
+    { name: '2025-26', gid: '936969361' },
+    { name: '2024-25', gid: '29744373' },
+    { name: 'Sheet3', gid: '' }
+];
 
         // Fixed column letters for the Invoice sheet, per its known header order:
         // A:INV NO  B:INV DATE  C:Month  D:STOCKIST CODE  E:STOCKIST NAME  F:AREA
@@ -1201,55 +1195,275 @@ select.appendChild(opt);
             return String(val ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         }
 
-        // The Invoice sheet is far too large (10M+ rows) to ever download to the
-        // browser, so instead of fetching the whole sheet we ask Google's
-        // Visualization Query API to filter server-side and return only one
-        // stockist's rows at a time.
+        // --- Representative Details (SM / RSM / ZSM) lookup ---
+        // Source sheet: https://docs.google.com/spreadsheets/d/18ZnzRjlN0QslMpeO5bUO4UU_Qb5-_p7Jcn6sBRkL4_U/edit
+        // Header order: DIVISION | STATE | PRISTINE TEAM | STOCKIST CODE | STOCKIST NAME |
+        //               AREA | EMP CODE | TM | ABM | SM | RSM | ZSM
+        // The sheet has ~1,00,000 rows, so we never download it fully. Instead each lookup
+        // sends a server-side filtered gviz query that returns only the 3 columns we need
+        // for a single matching Stockist Code/Name.
+        const REP_SHEET_ID = '18ZnzRjlN0QslMpeO5bUO4UU_Qb5-_p7Jcn6sBRkL4_U';
+        const REP_COL = { STOCKIST_CODE: 'D', STOCKIST_NAME: 'E', SM: 'J', RSM: 'K', ZSM: 'L' };
+
+        async function runRepQuery(tq) {
+            const params = new URLSearchParams({
+                headers: '1',
+                tqx: 'out:csv',
+                tq: tq
+            });
+
+            const url = `https://docs.google.com/spreadsheets/d/${REP_SHEET_ID}/gviz/tq?${params.toString()}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                headers: { 'Accept': 'text/csv,text/plain,*/*' }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Representative sheet query failed (HTTP ${response.status})`);
+            }
+
+            const csvText = await response.text();
+            return parseCSV(csvText);
+        }
+
+        async function runRepQuerySafe(tq) {
+            try {
+                return await runRepQuery(tq);
+            } catch (err) {
+                console.warn('Representative query failed:', { tq, error: err });
+                return [];
+            }
+        }
+
+        // Session cache so the same stockist appearing across multiple result cards
+        // (or re-opened cards) doesn't re-query the 1,00,000-row sheet every time.
+        window.repDetailsCache = new Map();
+
+        async function getRepresentativeDetails(code, name) {
+            const cacheKey = String(code || '').toUpperCase() + '||' + String(name || '').toUpperCase();
+
+            if (window.repDetailsCache.has(cacheKey)) {
+                return window.repDetailsCache.get(cacheKey);
+            }
+
+            const selectCols = `${REP_COL.SM}, ${REP_COL.RSM}, ${REP_COL.ZSM}`;
+            let rows = [];
+
+            // 1. Look up by Stockist Code first (fast, server-side filtered).
+            if (code) {
+                rows = await runRepQuerySafe(
+                    `select ${selectCols} where ${REP_COL.STOCKIST_CODE} = '${escQueryLiteral(code)}'`
+                );
+
+                // Numeric fallback in case the Stockist Code column is stored as a number.
+                if (!rows.length && /^\d+$/.test(code)) {
+                    rows = await runRepQuerySafe(
+                        `select ${selectCols} where ${REP_COL.STOCKIST_CODE} = ${code}`
+                    );
+                }
+            }
+
+            // 2. Fall back to Stockist Name if the code lookup found nothing.
+            if (!rows.length && name) {
+                rows = await runRepQuerySafe(
+                    `select ${selectCols} where ${REP_COL.STOCKIST_NAME} = '${escQueryLiteral(name)}'`
+                );
+            }
+
+            // A stockist can have more than one representative row (e.g. different
+            // divisions/teams for the same stockist code). Rather than showing one
+            // row per match (which repeats names when only one field differs),
+            // collect the distinct SM / RSM / ZSM values separately per column.
+            const addUnique = (set, seenLower, val) => {
+                const trimmed = String(val || '').trim();
+                if (!trimmed || trimmed === '-') return;
+                const lower = trimmed.toLowerCase();
+                if (seenLower.has(lower)) return;
+                seenLower.add(lower);
+                set.push(trimmed);
+            };
+
+            const smList = [], rsmList = [], zsmList = [];
+            const seenSM = new Set(), seenRSM = new Set(), seenZSM = new Set();
+            rows.forEach(row => {
+                addUnique(smList, seenSM, row['SM']);
+                addUnique(rsmList, seenRSM, row['RSM']);
+                addUnique(zsmList, seenZSM, row['ZSM']);
+            });
+
+            const result = (smList.length || rsmList.length || zsmList.length)
+                ? { SM: smList, RSM: rsmList, ZSM: zsmList }
+                : null;
+
+            window.repDetailsCache.set(cacheKey, result);
+            return result;
+        }
+
+        // Escape a value for safe use as HTML text content (used when building
+        // table row markup via innerHTML rather than textContent).
+        function escHtml(val) {
+            return String(val ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        // Builds the <tr> row for a Representative Details table from
+        // {SM: [...], RSM: [...], ZSM: [...]}. When a stockist has more than one
+        // representative for a role, all distinct names are shown comma-separated
+        // in that column, e.g. SM: "A, B".
+        function renderRepDetailsRows(rep) {
+            if (!rep || (!rep.SM.length && !rep.RSM.length && !rep.ZSM.length)) {
+                return '<tr><td colspan="3" style="text-align:center;color:#94a3b8;">Not found</td></tr>';
+            }
+            const fmt = list => list.length ? escHtml(list.join(', ')) : '-';
+            return `
+                <tr>
+                    <td>${fmt(rep.SM)}</td>
+                    <td>${fmt(rep.RSM)}</td>
+                    <td>${fmt(rep.ZSM)}</td>
+                </tr>
+            `;
+        }
+
+        // Scans the page for any not-yet-loaded "Representative Details" blocks
+        // (rendered by generateResultCardHtml) and fills them in asynchronously,
+        // so result cards render immediately while SM/RSM/ZSM populate a moment later.
+        async function loadAllRepresentativeDetails() {
+            const nodes = Array.from(document.querySelectorAll('.rep-details-section[data-rep-status="pending"]'));
+            if (!nodes.length) return;
+
+            nodes.forEach(n => n.setAttribute('data-rep-status', 'loading'));
+
+            await Promise.all(nodes.map(async (node) => {
+                const code = node.getAttribute('data-rep-code') || '';
+                const name = node.getAttribute('data-rep-name') || '';
+                const bodyEl = node.querySelector('.rep-details-body');
+
+                try {
+                    const reps = await getRepresentativeDetails(code, name);
+                    if (bodyEl) bodyEl.innerHTML = renderRepDetailsRows(reps);
+                    node.setAttribute('data-rep-status', 'done');
+                } catch (err) {
+                    console.warn('Representative details lookup failed:', { code, name, error: err });
+                    if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#dc2626;">Lookup failed</td></tr>';
+                    node.setAttribute('data-rep-status', 'error');
+                }
+            }));
+        }
+
+        // The invoice data can be stored across multiple tabs.
+        // Each configured tab is queried separately and the results are combined.
+        // Blank/invalid GIDs are automatically skipped.
         // https://developers.google.com/chart/interactive/docs/querylanguage
-        async function runInvoiceQuery(tq) {
-            const params = new URLSearchParams({ gid: INVOICE_SHEET_GID, headers: '1', tqx: 'out:csv', tq: tq });
+        async function runInvoiceQuery(gid, tq) {
+            if (!gid) return [];
+
+            const params = new URLSearchParams({
+                gid: String(gid),
+                headers: '1',
+                tqx: 'out:csv',
+                tq: tq
+            });
+
             const url = `https://docs.google.com/spreadsheets/d/${INVOICE_SHEET_ID}/gviz/tq?${params.toString()}`;
             const response = await fetch(url, {
                 method: 'GET',
                 mode: 'cors',
                 headers: { 'Accept': 'text/csv,text/plain,*/*' }
             });
-            if (!response.ok) throw new Error(`Invoice sheet query failed (HTTP ${response.status})`);
+
+            if (!response.ok) {
+                throw new Error(`Invoice sheet query failed for GID ${gid} (HTTP ${response.status})`);
+            }
+
             const csvText = await response.text();
             return parseCSV(csvText);
         }
 
-        // Same as runInvoiceQuery but swallows errors (bad/unsupported query) and
-        // returns an empty array instead, so callers can just try the next fallback.
-        async function runInvoiceQuerySafe(tq) {
+        // Query one configured sheet safely.
+        async function runInvoiceQuerySafe(gid, tq) {
             try {
-                return await runInvoiceQuery(tq);
+                return await runInvoiceQuery(gid, tq);
             } catch (err) {
-                console.warn('Invoice query failed:', tq, err);
+                console.warn('Invoice query failed:', { gid, tq, error: err });
                 return [];
             }
         }
 
+        // Query ALL configured invoice tabs and combine the results.
+        async function queryAllInvoiceSheets(tq) {
+            const validSheets = INVOICE_SHEETS.filter(s => s && s.gid);
+
+            const results = await Promise.all(
+                validSheets.map(async sheet => {
+                    const rows = await runInvoiceQuerySafe(sheet.gid, tq);
+
+                    // Keep track of which invoice tab produced the row.
+                    return rows.map(row => ({
+                        ...row,
+                        '_INVOICE_SHEET': sheet.name
+                    }));
+                })
+            );
+
+            return results.flat();
+        }
+
         // Session cache so switching between products for the same stockist doesn't
-        // re-query the sheet every time.
+        // re-query all invoice sheets every time.
         window.stockistInvoiceCache = new Map();
 
         async function getStockistInvoiceRows(code, name) {
             const cacheKey = code.toUpperCase() + '||' + name.toUpperCase();
-            if (window.stockistInvoiceCache.has(cacheKey)) return window.stockistInvoiceCache.get(cacheKey);
+
+            if (window.stockistInvoiceCache.has(cacheKey)) {
+                return window.stockistInvoiceCache.get(cacheKey);
+            }
 
             let rows = [];
+
+            // 1. Search Stockist Code in ALL configured invoice tabs.
             if (code) {
-                rows = await runInvoiceQuerySafe(`select * where ${INV_COL.STOCKIST_CODE} = '${escQueryLiteral(code)}'`);
-                // Fall back to a numeric-literal comparison in case the code column is
-                // stored as a number rather than text on the Invoice sheet.
+                rows = await queryAllInvoiceSheets(
+                    `select * where ${INV_COL.STOCKIST_CODE} = '${escQueryLiteral(code)}'`
+                );
+
+                // Numeric fallback for numeric Stockist Code columns.
                 if (!rows.length && /^\d+$/.test(code)) {
-                    rows = await runInvoiceQuerySafe(`select * where ${INV_COL.STOCKIST_CODE} = ${code}`);
+                    rows = await queryAllInvoiceSheets(
+                        `select * where ${INV_COL.STOCKIST_CODE} = ${code}`
+                    );
                 }
             }
+
+            // 2. If code did not find anything, search Stockist Name in ALL tabs.
             if (!rows.length && name) {
-                rows = await runInvoiceQuerySafe(`select * where ${INV_COL.STOCKIST_NAME} = '${escQueryLiteral(name)}'`);
+                rows = await queryAllInvoiceSheets(
+                    `select * where ${INV_COL.STOCKIST_NAME} = '${escQueryLiteral(name)}'`
+                );
             }
+
+            // Remove exact duplicate invoice rows if the same data exists in
+            // more than one configured sheet.
+            const seen = new Set();
+            rows = rows.filter(row => {
+                const key = [
+                    row['INV NO'],
+                    row['INV DATE'],
+                    row['STOCKIST CODE'],
+                    row['PRODUCT'],
+                    row['BATCH'],
+                    row['QTY'],
+                    row['RATE'],
+                    row['_INVOICE_SHEET']
+                ].join('|');
+
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
 
             window.stockistInvoiceCache.set(cacheKey, rows);
             return rows;
@@ -1258,6 +1472,7 @@ select.appendChild(opt);
         function invRowsToHtml(rows) {
             return rows.map(r => `
                 <tr class="${getExpiryClass(r['EXPIRY'])}">
+                    <td>${r['_INVOICE_SHEET'] || '-'}</td>
                     <td>${r['INV NO'] || '-'}</td>
                     <td>${r['INV DATE'] || '-'}</td>
                     <td>${r['BATCH'] || '-'}</td>
@@ -1270,7 +1485,7 @@ select.appendChild(opt);
         }
 
         function renderAgainstInvResults(matchBatchRows, otherBatchRows, batch) {
-            const theadRow = `<tr><th>Inv No.</th><th>Inv Date</th><th>Batch</th><th>Expiry</th>
+            const theadRow = `<tr><th>Invoice Year</th><th>Inv No.</th><th>Inv Date</th><th>Batch</th><th>Expiry</th>
                 <th style="text-align:right">MRP</th><th style="text-align:center">Qty</th>
                 <th style="text-align:center">FQty</th><th style="text-align:right">Rate</th></tr>`;
 
@@ -1563,6 +1778,20 @@ Download
                                         <div class="field-value">${firstResult['STATE']}</div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="section rep-details-section" data-rep-status="pending" data-rep-code="${escAttr(firstResult['STOCKIST CODE'])}" data-rep-name="${escAttr(firstResult['STOCKIST NAME'])}">
+                            <div class="section-header">Representative Details</div>
+                            <div class="product-table-container">
+                                <table class="product-table rep-details-table">
+                                    <thead>
+                                        <tr><th>SM</th><th>RSM</th><th>ZSM</th></tr>
+                                    </thead>
+                                    <tbody class="rep-details-body">
+                                        <tr><td colspan="3" style="text-align:center;">Loading...</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
@@ -1988,13 +2217,18 @@ function toggleExpirySort() {
     sortExpiryReport(newSort);
 }
 
-function generateInvoiceHTML(rows){
+async function generateInvoiceHTML(rows){
 
 const r = rows[0];
 
 let totalTaxable=0;
 let totalGST=0;
 let grandTotal=0;
+
+// Look up representatives for this stockist (some stockists have more than
+// one SM/RSM/ZSM), so the printed document reflects every distinct name.
+const repDetails = await getRepresentativeDetails(r['STOCKIST CODE'], r['STOCKIST NAME']);
+const repTableRows = renderRepDetailsRows(repDetails);
 
 const tableRows = rows.map((row,i)=>{
 
@@ -2067,6 +2301,22 @@ REF: ${r['SR Ref No.']}
 <tr>
 <td colspan="3"><b>POD NO.</b> : ${r['POD NO.']||''}</td>
 </tr>
+</table>
+
+
+<!-- REPRESENTATIVE DETAILS -->
+<div style="font-size:13px;font-weight:700;color:#0f172a;margin:10px 0 4px;">Representative Details</div>
+<table class="product-table">
+<thead>
+<tr>
+<th>SM</th>
+<th>RSM</th>
+<th>ZSM</th>
+</tr>
+</thead>
+<tbody>
+${repTableRows}
+</tbody>
 </table>
 
 
@@ -2246,6 +2496,7 @@ to{transform:scale(1);opacity:1}
             // Pass true for isExpandedView since this is the main single-SR view
             resultsSection.innerHTML = generateResultCardHtml(results, true);
 applyExpiryHighlighting();
+window.repDetailsLoadingPromise = loadAllRepresentativeDetails();
         }
 
 function generateSummaryCards(data){
@@ -2440,124 +2691,12 @@ document.getElementById('printPdfBtn').style.display='none';
                  alert("No data to export. Please run a report search first.");
             }
         });
-        document.getElementById('exportAgainstInvBtn').addEventListener('click', async function() {
-            if (!lastFilterResults.length) {
-                alert("No data to export. Please run a report search first.");
-                return;
-            }
-            const btn = this;
-            btn.disabled = true;
-            btn.textContent = 'Fetching Invoice Data...';
-            try {
-                // Collect unique stockists
-                const stockistMap = {};
-                lastFilterResults.forEach(r => {
-                    const key = (r['STOCKIST CODE'] || '').toUpperCase() + '||' + (r['STOCKIST NAME'] || '').toUpperCase();
-                    if (!stockistMap[key]) stockistMap[key] = { code: r['STOCKIST CODE'] || '', name: r['STOCKIST NAME'] || '' };
-                });
-
-                // Fetch invoice rows for all stockists in parallel (uses cache if already fetched)
-                const invByStockist = {};
-                await Promise.all(Object.entries(stockistMap).map(async ([key, s]) => {
-                    const rows = await getStockistInvoiceRows(s.code, s.name);
-                    invByStockist[key] = rows;
-                }));
-
-                // Build merged export rows: each SR row joined with its matching invoice line(s)
-                const merged = [];
-                lastFilterResults.forEach(sr => {
-                    const key = (sr['STOCKIST CODE'] || '').toUpperCase() + '||' + (sr['STOCKIST NAME'] || '').toUpperCase();
-                    const invRows = invByStockist[key] || [];
-
-                    // Match by PRODUCT + BATCH (exact, case-insensitive)
-                    const matchingInv = invRows.filter(inv =>
-                        (inv['PRODUCT'] || '').trim().toUpperCase() === (sr['PRODUCT'] || '').trim().toUpperCase() &&
-                        (inv['BATCH'] || '').trim().toUpperCase() === (sr['BATCH'] || '').trim().toUpperCase()
-                    );
-
-                    if (matchingInv.length > 0) {
-                        matchingInv.forEach(inv => {
-                            merged.push({
-                                // SR columns
-                                'SR Ref No.': sr['SR Ref No.'] || '',
-                                'R.GEN DATE': sr['R.GEN DATE'] || '',
-                                'STOCKIST CODE': sr['STOCKIST CODE'] || '',
-                                'STOCKIST NAME': sr['STOCKIST NAME'] || '',
-                                'AREA': sr['AREA'] || '',
-                                'STATE': sr['STATE'] || '',
-                                'C. INV NO.': sr['C. INV NO.'] || '',
-                                'C. INV DATE': sr['C. INV DATE'] || '',
-                                'CN NO.': sr['CN NO.'] || '',
-                                'CN DATE': sr['CN DATE'] || '',
-                                'PRODUCT': sr['PRODUCT'] || '',
-                                'BATCH': sr['BATCH'] || '',
-                                'EXPIRY': sr['EXPIRY'] || '',
-                                'SR QTY': sr['QTY'] || '',
-                                'SR FQTY': sr['FQTY'] || '',
-                                'SR RATE': sr['RATE'] || '',
-                                'SR TAXABLE': sr['TAXABLE'] || '',
-                                'SR GST VALUE': sr['GST VALUE'] || '',
-                                'SR TOTAL': sr['TOTAL'] || '',
-                                'STATUS': sr['STATUS'] || '',
-                                'REMARKS': sr['REMARKS'] || '',
-                                // Against Invoice columns
-                                'INV NO.': inv['INV NO'] || '',
-                                'INV DATE': inv['INV DATE'] || '',
-                                'INV BATCH': inv['BATCH'] || '',
-                                'INV EXPIRY': inv['EXPIRY'] || '',
-                                'INV MRP': inv['MRP'] || '',
-                                'INV QTY': inv['QTY'] || '',
-                                'INV FQTY': inv['FQTY'] || '',
-                                'INV RATE': inv['RATE'] || '',
-                                'INV TOTAL': inv['TOTAL AMOUNT'] || '',
-                                'INV TOTAL (INV LEVEL)': inv['INVOICE TOTAL'] || '',
-                            });
-                        });
-                    } else {
-                        // No matching invoice line — still export the SR row with blank inv columns
-                        merged.push({
-                            'SR Ref No.': sr['SR Ref No.'] || '',
-                            'R.GEN DATE': sr['R.GEN DATE'] || '',
-                            'STOCKIST CODE': sr['STOCKIST CODE'] || '',
-                            'STOCKIST NAME': sr['STOCKIST NAME'] || '',
-                            'AREA': sr['AREA'] || '',
-                            'STATE': sr['STATE'] || '',
-                            'C. INV NO.': sr['C. INV NO.'] || '',
-                            'C. INV DATE': sr['C. INV DATE'] || '',
-                            'CN NO.': sr['CN NO.'] || '',
-                            'CN DATE': sr['CN DATE'] || '',
-                            'PRODUCT': sr['PRODUCT'] || '',
-                            'BATCH': sr['BATCH'] || '',
-                            'EXPIRY': sr['EXPIRY'] || '',
-                            'SR QTY': sr['QTY'] || '',
-                            'SR FQTY': sr['FQTY'] || '',
-                            'SR RATE': sr['RATE'] || '',
-                            'SR TAXABLE': sr['TAXABLE'] || '',
-                            'SR GST VALUE': sr['GST VALUE'] || '',
-                            'SR TOTAL': sr['TOTAL'] || '',
-                            'STATUS': sr['STATUS'] || '',
-                            'REMARKS': sr['REMARKS'] || '',
-                            'INV NO.': '',
-                            'INV DATE': '',
-                            'INV BATCH': '',
-                            'INV EXPIRY': '',
-                            'INV MRP': '',
-                            'INV QTY': '',
-                            'INV FQTY': '',
-                            'INV RATE': '',
-                            'INV TOTAL': '',
-                            'INV TOTAL (INV LEVEL)': '',
-                        });
-                    }
-                });
-
+        document.getElementById('exportAgainstInvBtn').addEventListener('click', function() {
+            if (lastFilterResults.length > 0) {
                 const today = new Date().toISOString().slice(0, 10);
-                exportToCSV(merged, `SR_AgainstInv_Merged_${today}`);
-            } catch (err) {
-                alert('Export failed: ' + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'EXPORT ALL';
+                exportToCSV(lastFilterResults, `SR_AgainstInv_Data_${today}`);
+            } else {
+                 alert("No data to export. Please run a report search first.");
             }
         });
         document.getElementById('exportProductBtn').addEventListener('click', function() {
@@ -2616,7 +2755,8 @@ return;
 }
 
 // show same professional layout as single SR search
-resultsSection.innerHTML = generateInvoiceHTML(results);
+resultsSection.innerHTML = '<div class="loading">Loading representative details...</div>';
+resultsSection.innerHTML = await generateInvoiceHTML(results);
 
 // enable print button
 document.getElementById('printPdfBtn').style.display='block';
@@ -2728,6 +2868,7 @@ document.getElementById('exportExpiryBtn').style.display='block';
                 resultsSection.innerHTML =
 generateSummaryCards(filtered) + html;
 applyExpiryHighlighting();
+window.repDetailsLoadingPromise = loadAllRepresentativeDetails();
                 window.groupedResults = grouped;
 
             } catch (err) {
@@ -2832,6 +2973,7 @@ applyExpiryHighlighting();
 
                 resultsSection.innerHTML = generateSummaryCards(filtered) + html;
                 applyExpiryHighlighting();
+window.repDetailsLoadingPromise = loadAllRepresentativeDetails();
                 window.groupedResults = grouped;
 
             } catch (err) {
@@ -2840,7 +2982,9 @@ applyExpiryHighlighting();
             }
         });
 
-document.getElementById('printPdfBtn').addEventListener('click',()=>{
+document.getElementById('printPdfBtn').addEventListener('click', async ()=>{
+await window.repDetailsLoadingPromise;
+await loadAllRepresentativeDetails();
 const content=document.getElementById('resultsSection').innerHTML;
 
 const win=window.open('','','width=900,height=700');
@@ -3763,8 +3907,11 @@ document.getElementById('againstInvStockist')
 
         // Trigger dropdown population and set default tab on page load
         document.addEventListener('DOMContentLoaded', () => {
-            // Do NOT auto-populate — handled by unlockApp() after password entry
-            // Ensure the default tab content is displayed
+            const sheetId = document.getElementById('sheetId').value.trim();
+            if (sheetId) {
+                setTimeout(() => populateStockistsAndProducts(sheetId), 500);
+            }
+             // Ensure the default tab content is displayed
             document.getElementById('srSearch').style.display = 'block';
             document.getElementById('srSearch').classList.add('active');
             
@@ -3774,12 +3921,15 @@ document.getElementById('againstInvStockist')
                  defaultChartType.checked = true;
             }
         });
-function downloadSR(sr){
+async function downloadSR(sr){
 const rows = window.groupedResults?.[sr] || lastSearchResults;
 if(!rows) return alert("Data not found");
 
 const win = window.open('','','width=900,height=700');
-win.document.write(generateInvoiceHTML(rows));
+win.document.write('<p style="font-family:Arial;padding:20px">Loading...</p>');
+const html = await generateInvoiceHTML(rows);
+win.document.open();
+win.document.write(html);
 win.document.close();
 win.print();
 }
