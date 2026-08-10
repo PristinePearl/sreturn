@@ -1252,6 +1252,12 @@ select.appendChild(opt);
                 .trim();
         }
 
+        // Same as normalizeName but with ALL spaces removed too, so word-boundary
+        // differences ("SREEPADMAM" vs "SREE PADMAM") don't affect comparison.
+        function compactName(str) {
+            return normalizeName(str).replace(/\s+/g, '');
+        }
+
         // Levenshtein edit distance between two strings.
         function levenshteinDistance(a, b) {
             const m = a.length, n = b.length;
@@ -1285,20 +1291,78 @@ select.appendChild(opt);
             return 1 - (levenshteinDistance(a, b) / maxLen);
         }
 
-        // Picks a handful of distinctive words from a name to use as server-side
-        // "contains" filters, so we only pull down a small candidate set from the
-        // 1,00,000-row sheet instead of scanning it all client-side.
+        // Best-match ratio of the shorter string against any equal-length window
+        // of the longer string. This lets one name be a near-exact match for a
+        // *portion* of the other, so extra trailing/leading words (e.g. "...AND
+        // AGENICES" tacked onto a shorter sheet name) don't tank the score.
+        function partialRatio(a, b) {
+            if (!a.length || !b.length) return 0;
+            const shorter = a.length <= b.length ? a : b;
+            const longer = a.length <= b.length ? b : a;
+            if (shorter.length === longer.length) return similarityRatio(shorter, longer);
+
+            let best = 0;
+            for (let start = 0; start <= longer.length - shorter.length; start++) {
+                const window = longer.substr(start, shorter.length);
+                const ratio = similarityRatio(shorter, window);
+                if (ratio > best) best = ratio;
+                if (best === 1) break;
+            }
+            return best;
+        }
+
+        // Combines a full-string comparison (catches typos/spelling differences
+        // when both names are roughly the same length) with a compact partial
+        // comparison (catches missing/extra spaces between words, and one name
+        // being a superset of the other, e.g. an extra "AND AGENCIES" suffix).
+        // Returns the higher of the two, in [0, 1].
+        function nameSimilarity(nameA, nameB) {
+            const spacedA = normalizeName(nameA);
+            const spacedB = normalizeName(nameB);
+            const fullRatio = similarityRatio(spacedA, spacedB);
+
+            const compactA = compactName(nameA);
+            const compactB = compactName(nameB);
+            const partial = partialRatio(compactA, compactB);
+
+            return Math.max(fullRatio, partial);
+        }
+
+        // Generic words that are too common in business names to usefully narrow
+        // a server-side "contains" search (they'd match huge numbers of rows).
+        const REP_NAME_STOPWORDS = new Set([
+            'AND', 'THE', 'OF', 'PVT', 'LTD', 'LIMITED', 'CO', 'COMPANY',
+            'AGENCY', 'AGENCIES', 'AGENICES', 'PHARMA', 'PHARMACY', 'PHARMACEUTICALS',
+            'ENTERPRISES', 'TRADERS', 'DISTRIBUTORS', 'MEDICAL', 'MEDICALS', 'STORES', 'SALES'
+        ]);
+
+        // Picks a handful of distinctive words (and short prefixes of them) from a
+        // name to use as server-side "contains" filters, so we only pull down a
+        // small candidate set from the 1,00,000-row sheet instead of scanning it
+        // all client-side. Prefixes help find matches even when a word is merged
+        // or split differently between the two names (e.g. "SREEPADMAM" vs
+        // "SREE PADMAM").
         function extractSearchTokens(name) {
-            const words = normalizeName(name).split(' ').filter(w => w.length >= 3);
-            const unique = [...new Set(words)];
-            unique.sort((a, b) => b.length - a.length);
-            return unique.slice(0, 3);
+            const allWords = normalizeName(name).split(' ').filter(w => w.length >= 3);
+            let words = allWords.filter(w => !REP_NAME_STOPWORDS.has(w));
+            if (!words.length) words = allWords; // fall back if everything got filtered out
+
+            const unique = [...new Set(words)].sort((a, b) => b.length - a.length);
+            const topWords = unique.slice(0, 3);
+
+            const tokens = new Set();
+            topWords.forEach(w => {
+                tokens.add(w);
+                if (w.length > 4) tokens.add(w.slice(0, 4));
+            });
+
+            return [...tokens].sort((a, b) => b.length - a.length).slice(0, 5);
         }
 
         // Finds representative rows whose Stockist Name is a ~90%+ fuzzy match
         // for the given name. Used as a fallback when a stockist has no
         // Stockist Code and the exact name doesn't match (e.g. spelling
-        // differences, extra spaces/punctuation, abbreviations).
+        // differences, missing/extra spaces, abbreviations, or extra words).
         async function fuzzyMatchRepresentativeByName(name) {
             const normalizedInput = normalizeName(name);
             if (!normalizedInput) return [];
@@ -1326,7 +1390,7 @@ select.appendChild(opt);
 
             const FUZZY_THRESHOLD = 0.9; // ~90% name match
             return candidates
-                .map(row => ({ row, score: similarityRatio(normalizedInput, normalizeName(row['STOCKIST NAME'])) }))
+                .map(row => ({ row, score: nameSimilarity(name, row['STOCKIST NAME']) }))
                 .filter(m => m.score >= FUZZY_THRESHOLD)
                 .sort((a, b) => b.score - a.score)
                 .map(m => m.row);
