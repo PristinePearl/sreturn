@@ -468,7 +468,7 @@
 
       <!-- SECTION 1: Invoice & Stockist -->
       <div class="section-group">
-        <div class="section-group-header"><span class="dot"></span> Invoice &amp; Stockist Details</div>
+        <div class="section-group-header"><span class="dot"></span> Invoice &amp; Customer Details</div>
         <div class="section-group-body">
 
           <div>
@@ -480,12 +480,14 @@
             <input id="cInvNo" type="text" placeholder="Customer Inv. No." oninput="this.value=this.value.toUpperCase()">
           </div>
           <div>
-            <label for="stockist">Stockist Name</label>
-            <input type="text" id="stockistSearch" placeholder="🔍 Type to search stockist..." style="margin-bottom:5px;">
-            <select id="stockist"><option value="">-- Loading stockists... --</option></select>
+            <label for="stockistDisplay">CUSTOMER NAME</label>
+            <div style="display: flex; gap: 8px; align-items: flex-end;">
+              <input id="stockistDisplay" type="text" readonly placeholder="Click to select customer..." style="flex: 1;">
+              <button type="button" id="openStockistModal" style="padding: 9px 16px; margin: 0;">🔍 Select</button>
+            </div>
           </div>
           <div>
-            <label for="stockistCode">Stockist Code</label>
+            <label for="stockistCode">CUSTOMER CODE</label>
             <input id="stockistCode" type="text" readonly>
           </div>
           <div>
@@ -608,6 +610,29 @@
     </div>
   </div>
 
+  <!-- STOCKIST SELECTION MODAL -->
+  <div id="stockistModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:500px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:80vh;overflow:hidden;">
+      <!-- Modal Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:2px solid #dde3ea;background:linear-gradient(135deg, #0056b3 0%, #003d82 100%);color:#fff;">
+        <h2 style="margin:0;font-size:18px;font-weight:700;">Select Customer</h2>
+        <button type="button" onclick="closeStockistModal()" style="background:rgba(255,255,255,.2);border:0;color:#fff;font-size:24px;cursor:pointer;padding:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+      <!-- Search Box -->
+      <div style="padding:16px 24px;border-bottom:1px solid #dde3ea;">
+        <input id="stockistSearchBox" type="text" placeholder="🔍 Search customer by name..." style="width:100%;padding:11px 14px;border-radius:8px;border:1.5px solid #dde3ea;font-size:14px;box-sizing:border-box;">
+      </div>
+      <!-- Stockist List -->
+      <div id="stockistListContainer" style="overflow-y:auto;flex:1;padding:12px 8px;">
+        <p style="color:#888;text-align:center;margin:40px 0;">Loading customers...</p>
+      </div>
+      <!-- Modal Footer -->
+      <div style="padding:14px 24px;border-top:1px solid #dde3ea;text-align:right;">
+        <button type="button" onclick="closeStockistModal()" style="padding:9px 20px;font-size:13px;background:#eee;color:#333;border:0;border-radius:8px;cursor:pointer;font-weight:600;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SUCCESS DIALOGUE BOX -->
   <div id="successModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:14px;width:92%;max-width:450px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
@@ -629,11 +654,97 @@
   <script>
     // ** IMPORTANT: Replace this with your actual Google Apps Script Web App URL **
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbziC3U1Yds6bbc6XkliQdpctIoajspM1upHOUFQ5_V9t0yIkSkuJt_XyaxXG1b6ac-H/exec';
-    const stockistEl       = document.getElementById('stockist');
+    
+    // Hidden select for backward compatibility with backend
+    const stockistEl       = document.getElementById('stockist') || document.createElement('select');
+    if (!document.getElementById('stockist')) {
+      stockistEl.id = 'stockist';
+      stockistEl.style.display = 'none';
+      document.body.appendChild(stockistEl);
+    }
+    
     const submitBtn        = document.getElementById('submitToSheet');
     const uploadStatus     = document.getElementById('uploadStatus');
     const totalValueDisplay = document.getElementById('totalValueDisplay');
     const returnNatureEl   = document.getElementById('returnNature');
+    
+    let stockistList = []; // Store all stockists for search
+
+    // Modal functions
+    function openStockistModal() {
+      document.getElementById('stockistModal').style.display = 'flex';
+      populateStockistList(stockistList);
+    }
+
+    function closeStockistModal() {
+      document.getElementById('stockistModal').style.display = 'none';
+    }
+
+    function selectStockist(name, code, area, team) {
+      document.getElementById('stockistDisplay').value = name;
+      document.getElementById('stockistCode').value = code;
+      document.getElementById('area').value = area;
+      document.getElementById('team').value = team;
+      
+      // Update hidden select for backend compatibility
+      const opt = Array.from(stockistEl.options).find(o => o.textContent === name);
+      if (opt) {
+        stockistEl.value = opt.value;
+        stockistEl.dispatchEvent(new Event('change'));
+      } else {
+        // Create option if not found
+        const newOpt = document.createElement('option');
+        newOpt.value = code;
+        newOpt.textContent = name;
+        newOpt.dataset.area = area;
+        newOpt.dataset.team = team;
+        stockistEl.appendChild(newOpt);
+        stockistEl.value = code;
+        stockistEl.dispatchEvent(new Event('change'));
+      }
+      
+      closeStockistModal();
+      saveDraft();
+    }
+
+    function populateStockistList(list) {
+      const container = document.getElementById('stockistListContainer');
+      if (list.length === 0) {
+        container.innerHTML = '<p style="color:#888;text-align:center;margin:40px 0;">No customers found.</p>';
+        return;
+      }
+      
+      container.innerHTML = list
+        .map(s => `
+          <div style="padding:10px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all .15s;" 
+               onmouseover="this.style.background='#f0f3f7';this.style.borderColor='#dde3ea';"
+               onmouseout="this.style.background='transparent';this.style.borderColor='transparent';"
+               onclick="selectStockist('${s.name.replace(/'/g, "\\'")}', '${s.code}', '${s.area}', '${s.team}')">
+            <div style="font-weight:600;color:#1e2a38;font-size:14px;">${s.name}</div>
+            <div style="font-size:12px;color:#6c7a8d;margin-top:4px;">Code: ${s.code} | Area: ${s.area} | Team: ${s.team}</div>
+          </div>
+        `)
+        .join('');
+    }
+
+    // Search functionality
+    document.getElementById('stockistSearchBox')?.addEventListener('input', function() {
+      const keyword = this.value.toLowerCase();
+      const filtered = stockistList.filter(s => 
+        s.name.toLowerCase().includes(keyword) || 
+        s.code.toLowerCase().includes(keyword) ||
+        s.area.toLowerCase().includes(keyword)
+      );
+      populateStockistList(filtered);
+    });
+
+    // Open modal button
+    document.getElementById('openStockistModal')?.addEventListener('click', openStockistModal);
+    
+    // Close modal when clicking outside
+    document.getElementById('stockistModal')?.addEventListener('click', function(e) {
+      if (e.target === this) closeStockistModal();
+    });
 
     stockistEl.addEventListener('change', () => {
       const sel = stockistEl.selectedOptions[0];
@@ -650,18 +761,27 @@
         .then(csv => {
           const lines = csv.trim().split('\n').slice(1);
           stockistEl.innerHTML = '<option value="">-- Select Customer --</option>';
+          stockistList = [];
+          
           lines.forEach(line => {
             const cols  = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
             const clean = cols.map(c => c.replace(/^"|"$/g, '').trim());
             const [code, area, team, name] = clean;
             if (!name) return;
+            
             const opt = document.createElement('option');
             opt.value        = code  || '';
             opt.dataset.area = area  || '';
             opt.dataset.team = team  || '';
             opt.textContent  = name;
             stockistEl.appendChild(opt);
+            
+            stockistList.push({ name, code, area, team });
           });
+          
+          // Sort alphabetically by name
+          stockistList.sort((a, b) => a.name.localeCompare(b.name));
+          
           if (window._rebuildSearchOptions) window._rebuildSearchOptions();
         })
         .catch(err => {
@@ -958,8 +1078,7 @@
 
       const cInvDate     = dateEl.value;
       const cInvNo       = cInvNoEl.value;
-      const stockistOpt  = stockistEl.selectedOptions[0];
-      const stockistName = stockistOpt ? stockistOpt.textContent : '';
+      const stockistName = document.getElementById('stockistDisplay').value;
       const stockistCode = document.getElementById('stockistCode').value;
       const area         = document.getElementById('area').value;
       const team         = document.getElementById('team').value;
@@ -970,7 +1089,7 @@
       const podNo        = document.getElementById('podNo').value;
 
       if (!cInvDate || !cInvNo || !stockistName) {
-        alert('Please fill C.Inv Date, C.Inv No., and Stockist Name.');
+        alert('Please fill C.Inv Date, C.Inv No., and select a Customer from the dropdown.');
         return null;
       }
       if (rows.length === 0) {
@@ -1055,8 +1174,7 @@
     function collectDraftHeader() {
       const cInvDate     = document.getElementById('date').value;
       const cInvNo       = document.getElementById('cInvNo').value.trim();
-      const stockistOpt  = stockistEl.selectedOptions[0];
-      const stockistName = stockistOpt ? stockistOpt.textContent.trim() : '';
+      const stockistName = document.getElementById('stockistDisplay').value;
       const stockistCode = document.getElementById('stockistCode').value;
       const area         = document.getElementById('area').value;
       const team         = document.getElementById('team').value;
@@ -1065,7 +1183,7 @@
       const boxes        = document.getElementById('noOfBoxes').value;
       const value        = document.getElementById('returnValue').value;
       const memberID     = memberIDHidden.value || memberIDBadge.textContent;
-      if (!stockistName) { alert('Please select a Stockist before saving draft.'); return null; }
+      if (!stockistName) { alert('Please select a Customer from the dropdown before saving.'); return null; }
       return { memberID, cInvDate: fmtDate(cInvDate), cInvNo, stockistCode, stockistName, area, team, courierName: courier, podNo: pod, noOfBoxes: boxes, returnValue: value };
     }
 
@@ -1254,7 +1372,7 @@
     });
 
     /* ── LISTEN FOR CHANGES AND SAVE ── */
-    ['date', 'cInvNo', 'stockist', 'courierName', 'podNo', 'noOfBoxes', 'returnValue'].forEach(id => {
+    ['date', 'cInvNo', 'stockistDisplay', 'courierName', 'podNo', 'noOfBoxes', 'returnValue'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener('change', saveDraft);
@@ -1263,32 +1381,13 @@
     });
     itemsTable.addEventListener('change', saveDraft);
     itemsTable.addEventListener('input', saveDraft);
-    const searchInput    = document.getElementById('stockistSearch');
-    let originalOptions  = Array.from(stockistEl.options);
-
-    window._rebuildSearchOptions = function () {
-      originalOptions = Array.from(stockistEl.options);
-    };
-
-    searchInput.addEventListener('input', function () {
-      const keyword = this.value.toLowerCase();
-      stockistEl.innerHTML = '';
-      originalOptions.forEach(opt => {
-        if (opt.text.toLowerCase().includes(keyword) || opt.value === '') {
-          stockistEl.appendChild(opt.cloneNode(true));
-        }
-      });
-      stockistEl.size = Math.min(8, stockistEl.options.length);
-    });
-    stockistEl.addEventListener('change', () => { stockistEl.size = 1; });
-    searchInput.addEventListener('blur',  () => setTimeout(() => { stockistEl.size = 1; }, 200));
 
     /* ── CLEAR FORM FUNCTION ── */
     function clearForm() {
       // Clear all input fields
       document.getElementById('date').value = new Date().toISOString().split('T')[0];
       document.getElementById('cInvNo').value = '';
-      document.getElementById('stockist').value = '';
+      document.getElementById('stockistDisplay').value = '';
       document.getElementById('stockistCode').value = '';
       document.getElementById('area').value = '';
       document.getElementById('team').value = '';
@@ -1313,11 +1412,13 @@
 
     /* ── AUTO-SAVE DRAFT (localStorage, power-cut safe) - Every 2 minutes ── */
     function saveDraft() {
+      const stockistDisplay = document.getElementById('stockistDisplay')?.value || '';
       const draft = {
         memberID:    memberIDHidden?.value || memberIDBadge?.textContent || '',
         date:        document.getElementById('date')?.value        || '',
         cInvNo:      document.getElementById('cInvNo')?.value      || '',
-        stockist:    document.getElementById('stockist')?.value    || '',
+        stockist:    stockistDisplay || '--select Customer--',
+        stockistCode: document.getElementById('stockistCode')?.value || '',
         courierName: document.getElementById('courierName')?.value || '',
         podNo:       document.getElementById('podNo')?.value       || '',
         noOfBoxes:   document.getElementById('noOfBoxes')?.value   || '',
