@@ -13,6 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     
     <style>
         * {
@@ -724,7 +725,182 @@ font-weight:800;
 color:#1e293b;
 }
 
-    </style>
+    
+        /* --- Compact pill-grid tabs (override): frees space so filter forms stay usable --- */
+        .left-panel { overflow: hidden; }
+        .tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            padding: 10px 12px;
+            max-height: 36vh;
+            overflow-y: auto;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            flex-shrink: 0;
+        }
+        .tab-button {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            min-height: 38px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            line-height: 1.2;
+            text-align: left;
+            color: #334155;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-left: 1px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .tab-button:hover:not(.active) {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #1e3a8a;
+        }
+        .tab-button.active {
+            background: linear-gradient(135deg, #1e3a8a 0%, #0891b2 100%);
+            color: #ffffff;
+            border-color: transparent;
+            border-left: 1px solid transparent;
+            box-shadow: 0 2px 6px rgba(30, 58, 138, 0.35);
+        }
+        .search-section { min-height: 0; flex: 1 1 auto; overflow-y: auto; }
+        .tabs::-webkit-scrollbar { width: 6px; }
+        .tabs::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        /* --- Grouped accordion menu (overrides pill grid) --- */
+        .tabs {
+            display: block;
+            padding: 8px 10px;
+            max-height: 48vh;
+            overflow-y: auto;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .menu-group { margin-bottom: 6px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .menu-head {
+            width: 100%; display: flex; align-items: center; gap: 8px;
+            padding: 10px 12px; border: none; background: #fff; cursor: pointer;
+            font-size: 0.86rem; font-weight: 700; color: #0f172a; text-align: left;
+        }
+        .menu-head > span:first-child { flex: 1; }
+        .menu-head:hover { background: #f1f5f9; }
+        .menu-count { font-size: 0.7rem; font-weight: 600; color: #475569; background: #e2e8f0; border-radius: 10px; padding: 1px 8px; }
+        .menu-chev { font-size: 0.8rem; color: #64748b; transition: transform .2s; }
+        .menu-group.open .menu-chev { transform: rotate(180deg); }
+        .menu-group.has-active > .menu-head { background: linear-gradient(135deg, #1e3a8a 0%, #0891b2 100%); color: #fff; }
+        .menu-group.has-active .menu-count { background: rgba(255,255,255,.25); color: #fff; }
+        .menu-group.has-active .menu-chev { color: #fff; }
+        .menu-items { display: none; padding: 4px 6px 6px; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+        .menu-group.open .menu-items { display: block; }
+        .menu-items .tab-button {
+            display: block; width: 100%; min-height: 0; margin: 2px 0;
+            padding: 8px 12px 8px 14px; font-size: 0.85rem; font-weight: 500; color: #334155;
+            background: transparent; border: none; border-left: 3px solid transparent;
+            border-radius: 6px; box-shadow: none; text-align: left;
+        }
+        .menu-items .tab-button:hover:not(.active) { background: #eef2ff; color: #1e3a8a; border-left-color: #c7d2fe; }
+        .menu-items .tab-button.active {
+            background: #e0f2fe; color: #0f172a; font-weight: 700;
+            border-left: 3px solid #0891b2; box-shadow: none;
+        }
+        .menu-link {
+            display: block; padding: 10px 12px; margin-top: 2px; border: 1px dashed #cbd5e1; border-radius: 10px;
+            font-size: 0.86rem; font-weight: 600; color: #1e3a8a; text-decoration: none; background: #fff;
+        }
+        .menu-link:hover { background: #eef2ff; }
+
+        /* --- Top menubar --- */
+        body { display: flex; flex-direction: column; }
+        .top-menubar {
+            position: relative; z-index: 1000; flex-shrink: 0;
+            display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+            padding: 0 14px; min-height: 46px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);
+        }
+        .main-container { height: auto; flex: 1 1 auto; min-height: 0; }
+        .tm-group { position: relative; }
+        .tm-head {
+            display: flex; align-items: center; gap: 6px; padding: 12px 14px; border: none; background: transparent;
+            color: #e2e8f0; font-size: 0.88rem; font-weight: 600; cursor: pointer; border-radius: 6px; font-family: inherit;
+        }
+        .tm-head:hover, .tm-group.open > .tm-head { background: rgba(255,255,255,.14); color: #fff; }
+        .tm-group.has-active > .tm-head { color: #fff; box-shadow: inset 0 -3px 0 #22d3ee; border-radius: 6px 6px 0 0; }
+        .tm-chev { font-size: 0.7rem; opacity: .8; transition: transform .2s; }
+        .tm-group.open .tm-chev { transform: rotate(180deg); }
+        .tm-menu {
+            display: none; position: absolute; top: 100%; left: 0; min-width: 230px; padding: 6px;
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 10px 10px;
+            box-shadow: 0 10px 25px rgba(15,23,42,.25);
+        }
+        .tm-group.open .tm-menu { display: block; }
+        .tm-menu .tab-button {
+            display: block; width: 100%; min-height: 0; margin: 2px 0; padding: 9px 12px;
+            font-size: 0.86rem; font-weight: 500; text-align: left; color: #1e293b;
+            background: transparent; border: none; border-left: 3px solid transparent; border-radius: 6px; box-shadow: none;
+        }
+        .tm-menu .tab-button:hover:not(.active) { background: #eef2ff; color: #1e3a8a; border-left-color: #c7d2fe; }
+        .tm-menu .tab-button.active { background: #e0f2fe; color: #0f172a; font-weight: 700; border-left: 3px solid #0891b2; box-shadow: none; }
+        .tm-link { padding: 12px 14px; color: #e2e8f0; text-decoration: none; font-size: 0.88rem; font-weight: 600; border-radius: 6px; }
+        .tm-link:hover { background: rgba(255,255,255,.14); color: #fff; }
+        .tm-current { margin-left: auto; color: #cbd5e1; font-size: 0.8rem; padding: 0 6px; }
+        .tm-current b { color: #67e8f9; }
+        @media (max-width: 768px) {
+            body { height: auto; overflow: auto; display: block; }
+            .top-menubar { padding: 0 6px; }
+            .tm-head, .tm-link { padding: 10px 9px; font-size: 0.8rem; }
+            .tm-current { display: none; }
+            .tm-menu { position: fixed; left: 8px; right: 8px; top: auto; margin-top: 0; }
+        }
+
+        /* --- Filters on top (horizontal bar), results full width --- */
+        .tm-brand { display: flex; align-items: center; gap: 8px; margin-right: 14px; padding-right: 14px; border-right: 1px solid rgba(255,255,255,.2); color: #fff; font-weight: 700; font-size: 0.92rem; letter-spacing: -0.01em; white-space: nowrap; }
+        .tm-brand img { width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,.2); }
+        .main-container { flex-direction: column; }
+        .left-panel {
+            width: 100%; height: auto; flex-shrink: 0;
+            border-right: none; border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,.06); overflow: visible;
+        }
+        .left-panel .search-section { padding: 10px 16px; flex: none; max-height: 40vh; overflow-y: auto; background: #f8fafc; }
+        .right-panel { flex: 1 1 auto; min-height: 0; width: 100%; }
+        .search-form { flex-direction: row; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; }
+        .search-form h3 { flex: 0 0 auto; align-self: center; margin: 0 6px 0 0 !important; padding-right: 14px; border-right: 2px solid #cbd5e1; font-size: 0.95rem !important; white-space: nowrap; }
+        .search-form .form-group { flex: 1 1 150px; min-width: 140px; max-width: 230px; }
+        .search-form .form-group input, .search-form .form-group select { padding: 8px 10px; }
+        .search-form .btn { margin-top: 0; padding: 9px 18px; flex: 0 0 auto; }
+        .search-form .btn-secondary { margin-top: 0; }
+        @media (max-width: 768px) {
+            .left-panel { height: auto; }
+            .left-panel .search-section { max-height: none; }
+            .search-form h3 { flex-basis: 100%; border-right: none; padding-right: 0; }
+            .search-form .form-group { max-width: none; flex: 1 1 100%; }
+            .tm-brand span { display: none; }
+            .right-panel { height: auto; min-height: 60vh; }
+        }
+
+        .search-form .form-group:has(input[type="text"]) { flex: 1 1 280px; max-width: 360px; }
+
+        /* --- Details dialog (Expand) --- */
+        #detailsModalOverlay { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(15,23,42,.6); align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px); }
+        .dm-dialog { background: #fff; width: min(1100px, 96vw); max-height: 90vh; border-radius: 14px; box-shadow: 0 25px 60px rgba(0,0,0,.4); display: flex; flex-direction: column; overflow: hidden; animation: dmPop .18s ease-out; }
+        @keyframes dmPop { from { transform: scale(.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .dm-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 20px; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); color: #fff; flex-shrink: 0; }
+        .dm-title { font-size: 1.15rem; font-weight: 700; line-height: 1.2; }
+        .dm-sub { font-size: 0.85rem; color: #bfdbfe; margin-top: 3px; }
+        .dm-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+        .dm-total { font-size: 1rem; font-weight: 700; color: #67e8f9; white-space: nowrap; }
+        .dm-close { width: 34px; height: 34px; border: none; border-radius: 8px; background: rgba(255,255,255,.15); color: #fff; font-size: 1rem; cursor: pointer; }
+        .dm-close:hover { background: #ef4444; }
+        .dm-body { padding: 16px 20px 20px; overflow: auto; background: #f8fafc; }
+        .dm-body .result-card { margin: 0; box-shadow: none; }
+        @media (max-width: 768px) { #detailsModalOverlay { padding: 8px; } .dm-header { flex-wrap: wrap; padding: 12px; } .dm-body { padding: 10px; } }
+</style>
 </head>
 <body>
     <div id="passwordGateOverlay" style="position:fixed; inset:0; z-index:99999; background:linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); display:flex; align-items:center; justify-content:center; font-family:'Inter','Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;">
@@ -786,29 +962,44 @@ color:#1e293b;
         });
     })();
     </script>
+    <div class="top-menubar" id="topMenubar">
+        <div class="tm-brand"><img src="https://pristinepearl.github.io/Home/alt-logo.png" alt="PRISTINE PEARL PHARMA Logo"><span>PRISTINE PEARL PHARMA</span></div>
+        <div class="tm-group has-active">
+            <button type="button" class="tm-head" onclick="toggleTM(event,this)">🔍 Search <span class="tm-chev">▾</span></button>
+            <div class="tm-menu">
+                <button class="tab-button active" onclick="openTab(event, 'srSearch')">Single SR Search</button>
+                <button class="tab-button" onclick="openTab(event, 'againstInv')">Against Inv</button>
+            </div>
+        </div>
+        <div class="tm-group">
+            <button type="button" class="tm-head" onclick="toggleTM(event,this)">📋 Reports <span class="tm-chev">▾</span></button>
+            <div class="tm-menu">
+                <button class="tab-button" onclick="openTab(event, 'dateStockist')">Stockist/Date Report</button>
+                <button class="tab-button" onclick="openTab(event, 'consolidated')">Consolidated Report</button>
+                <button class="tab-button" onclick="openTab(event, 'expiryQuality')">Expiry/Quality Report</button>
+            </div>
+        </div>
+        <div class="tm-group">
+            <button type="button" class="tm-head" onclick="toggleTM(event,this)">📊 Analysis <span class="tm-chev">▾</span></button>
+            <div class="tm-menu">
+                <button class="tab-button" onclick="openTab(event, 'productAnalysis')">Product Analysis</button>
+                <button class="tab-button" onclick="openTab(event, 'stockistRank')">Stockist-wise Ranking</button>
+                <button class="tab-button" onclick="openTab(event, 'productRank')">Product-wise Ranking</button>
+                <button class="tab-button" onclick="openTab(event, 'stateMatrix')">State × Month Matrix</button>
+            </div>
+        </div>
+        <div class="tm-group">
+            <button type="button" class="tm-head" onclick="toggleTM(event,this)">📈 Charts & Trends <span class="tm-chev">▾</span></button>
+            <div class="tm-menu">
+                <button class="tab-button" onclick="openTab(event, 'graphicalReports')">Graphical Reports</button>
+                <button class="tab-button" onclick="openTab(event, 'aiAnalysis')">Trend Analysis</button>
+            </div>
+        </div>
+        <a class="tm-link" href="https://pristinepearl.github.io/sreturn/draft" target="_blank" rel="noopener">📑 Draft Analysis ↗</a>
+        <div class="tm-current">Report: <b id="tmCurrent">Single SR Search</b></div>
+    </div>
     <div class="main-container">
 <div class="left-panel">
-    <div class="header">
-        <div class="header-content">
-            <img src="https://pristinepearl.github.io/Home/alt-logo.png" alt="PRISTINE PEARL PHARMA Logo" class="company-logo">
-            <h1>PRISTINE PEARL PHARMA</h1>
-        </div>
-    </div>
-            
-    <div class="tabs">
-        <button class="tab-button active" onclick="openTab(event, 'srSearch')">🔍 Single SR Search</button>
-        <button class="tab-button" onclick="openTab(event, 'dateStockist')">📜 Stockist/Date Report</button>
-        <button class="tab-button" onclick="openTab(event, 'againstInv')">🧾 Against Inv</button>
-        <button class="tab-button" onclick="openTab(event, 'productAnalysis')">📦 Product Analysis</button>
-        <button class="tab-button" onclick="openTab(event, 'expiryQuality')">⚠️ Expiry/Quality Report</button>
-        <button class="tab-button" onclick="openTab(event, 'graphicalReports')">📊 Graphical Reports</button>
-        <button class="tab-button" onclick="openTab(event, 'aiAnalysis')">📈 Trend Analysis</button>
-        <button class="tab-button" onclick="window.open('https://pristinepearl.github.io/sreturn/draft', '_blank')">
-   📑 Draft Analysis
-</button>
-
-    </div>
-
     <div class="search-section">
 
         <div id="srSearch" class="tab-content active">
@@ -984,6 +1175,51 @@ color:#1e293b;
                 <button type="submit" class="btn">Generate AI Report</button>
             </form>
         </div>
+<div id="consolidated" class="tab-content">
+<form class="search-form" id="consolidatedForm">
+<h3 style="font-size:1rem;margin-bottom:5px;color:#0f172a;">Consolidated SR Report</h3>
+<div class="form-group"><label>From Date (R.GEN DATE)</label><input type="date" id="consFromDate"></div>
+<div class="form-group"><label>To Date (R.GEN DATE)</label><input type="date" id="consToDate"></div>
+<div class="form-group"><label>Stockist Name</label><select id="consStockist"><option value="">All Stockists</option></select></div>
+<div class="form-group"><label>State</label><select id="consState"><option value="">All States</option></select></div>
+<button type="submit" class="btn">Generate Report</button>
+<button type="button" class="btn btn-secondary" id="exportConsBtn" style="display:none;">EXPORT REPORT + SUMMARY</button>
+</form>
+</div>
+<div id="stockistRank" class="tab-content">
+<form class="search-form" id="stockistRankForm">
+<h3 style="font-size:1rem;margin-bottom:5px;color:#0f172a;">Stockist-wise Return Ranking</h3>
+<div class="form-group"><label>From Date (R.GEN DATE)</label><input type="date" id="stkFrom"></div>
+<div class="form-group"><label>To Date (R.GEN DATE)</label><input type="date" id="stkTo"></div>
+<div class="form-group"><label>State</label><select id="stkState"><option value="">All States</option></select></div>
+<div class="form-group"><label>Stockist Name</label><select id="stkStockist"><option value="">All Stockists</option></select></div>
+<button type="submit" class="btn">Generate Report</button>
+<button type="button" class="btn btn-secondary" id="exportStkBtn" style="display:none;">EXPORT TO EXCEL</button>
+</form>
+</div>
+<div id="productRank" class="tab-content">
+<form class="search-form" id="productRankForm">
+<h3 style="font-size:1rem;margin-bottom:5px;color:#0f172a;">Product-wise Return Ranking</h3>
+<div class="form-group"><label>From Date (R.GEN DATE)</label><input type="date" id="prdFrom"></div>
+<div class="form-group"><label>To Date (R.GEN DATE)</label><input type="date" id="prdTo"></div>
+<div class="form-group"><label>State</label><select id="prdState"><option value="">All States</option></select></div>
+<div class="form-group"><label>Stockist Name</label><select id="prdStockist"><option value="">All Stockists</option></select></div>
+<button type="submit" class="btn">Generate Report</button>
+<button type="button" class="btn btn-secondary" id="exportPrdBtn" style="display:none;">EXPORT TO EXCEL</button>
+</form>
+</div>
+<div id="stateMatrix" class="tab-content">
+<form class="search-form" id="stateMatrixForm">
+<h3 style="font-size:1rem;margin-bottom:5px;color:#0f172a;">State × Month Matrix</h3>
+<div class="form-group"><label>From Date (R.GEN DATE)</label><input type="date" id="matFrom"></div>
+<div class="form-group"><label>To Date (R.GEN DATE)</label><input type="date" id="matTo"></div>
+<div class="form-group"><label>State</label><select id="matState"><option value="">All States</option></select></div>
+<div class="form-group"><label>Stockist Name</label><select id="matStockist"><option value="">All Stockists</option></select></div>
+<div class="form-group"><label>Metric</label><select id="matMetric"><option value="Value">Value</option><option value="SR Count">SR Count</option><option value="Qty">Quantity</option></select></div>
+<button type="submit" class="btn">Generate Report</button>
+<button type="button" class="btn btn-secondary" id="exportMatBtn" style="display:none;">EXPORT TO EXCEL</button>
+</form>
+</div>
 <div id="printDoc" class="tab-content">
 <form class="search-form" id="printForm">
 
@@ -2790,6 +3026,8 @@ applyExpiryHighlighting();
             document.getElementById('exportProductBtn').style.display = 'none';
             document.getElementById('exportExpiryBtn').style.display = 'none';
             document.getElementById('exportChartBtn').style.display = 'none';
+            document.getElementById('exportConsBtn').style.display = 'none';
+            ['exportStkBtn','exportPrdBtn','exportMatBtn'].forEach(function(i){ document.getElementById(i).style.display = 'none'; });
 document.getElementById('printPdfBtn').style.display='none';
         }
         
@@ -4037,29 +4275,64 @@ document.getElementById('againstInvStockist')
         }
 
 
-        // Toggle expand/collapse function
-        function toggleExpand(srRef) {
-            const div = document.getElementById('details-' + srRef);
-            const button = document.getElementById('card-' + srRef).querySelector('.result-header button');
-            
-            if (div.style.display === 'none') {
-                div.style.display = 'block';
-                button.textContent = 'Collapse';
-                // Find the first occurrence of the stockist name and change its color to dark indigo
-                const srRefDiv = document.getElementById('card-' + srRef).querySelector('.sr-ref');
-                 if (srRefDiv) {
-                     srRefDiv.style.color = '#1f2937'; // Change to standard dark text when expanded
-                 }
-            } else {
-                div.style.display = 'none';
-                button.textContent = 'Expand';
-                // Change the stockist name color back to dark indigo when collapsed
-                const srRefDiv = document.getElementById('card-' + srRef).querySelector('.sr-ref');
-                 if (srRefDiv) {
-                     srRefDiv.style.color = '#0f172a'; // Dark Indigo
-                 }
-            }
+        // Expand -> opens the SR details in a dialog box (details node is moved in/out, so handlers & ids stay intact)
+        let _detailsModal = null, _detailsOpen = null;
+        function _ensureDetailsModal() {
+            if (_detailsModal) return _detailsModal;
+            const ov = document.createElement('div');
+            ov.id = 'detailsModalOverlay';
+            ov.innerHTML = `
+                <div class="dm-dialog" role="dialog" aria-modal="true">
+                    <div class="dm-header">
+                        <div>
+                            <div class="dm-title" id="dmTitle"></div>
+                            <div class="dm-sub" id="dmSub"></div>
+                        </div>
+                        <div class="dm-right">
+                            <div class="dm-total" id="dmTotal"></div>
+                            <button type="button" class="dm-close" id="dmClose" aria-label="Close">✕</button>
+                        </div>
+                    </div>
+                    <div class="dm-body" id="dmBody"></div>
+                </div>`;
+            document.body.appendChild(ov);
+            ov.addEventListener('click', e => { if (e.target === ov) closeDetailsModal(); });
+            ov.querySelector('#dmClose').addEventListener('click', closeDetailsModal);
+            document.addEventListener('keydown', e => { if (e.key === 'Escape' && _detailsOpen) closeDetailsModal(); });
+            _detailsModal = ov;
+            return ov;
         }
+        function closeDetailsModal() {
+            if (!_detailsOpen) return;
+            const { det, home } = _detailsOpen;
+            det.style.display = 'none';
+            home.appendChild(det);
+            _detailsModal.style.display = 'none';
+            _detailsOpen = null;
+        }
+        function toggleExpand(srRef) {
+            const card = document.getElementById('card-' + srRef);
+            const det = document.getElementById('details-' + srRef);
+            if (!card || !det) return;
+            if (_detailsOpen) closeDetailsModal();
+            const ov = _ensureDetailsModal();
+            const nameEl = card.querySelector('.sr-ref');
+            const name = nameEl && nameEl.firstChild ? nameEl.firstChild.textContent.trim() : '';
+            const sub = nameEl && nameEl.nextElementSibling ? nameEl.nextElementSibling.textContent.trim() : ('SR: ' + srRef);
+            const tot = card.querySelector('.total-amount');
+            ov.querySelector('#dmTitle').textContent = name || ('SR ' + srRef);
+            ov.querySelector('#dmSub').textContent = sub;
+            ov.querySelector('#dmTotal').textContent = tot ? tot.textContent.trim() : '';
+            const body = ov.querySelector('#dmBody');
+            body.scrollTop = 0;
+            body.appendChild(det);
+            det.style.display = 'block';
+            det.style.paddingTop = '0';
+            ov.style.display = 'flex';
+            _detailsOpen = { det, home: card };
+            ov.querySelector('#dmClose').focus();
+        }
+        window.closeDetailsModal = closeDetailsModal;
 
 
         // Trigger dropdown population and set default tab on page load
@@ -4352,5 +4625,446 @@ color:#555;">×</button>
 
 </div>
 </div>
+
+<script>
+(function(){
+  const num = v => parseFloat(String(v==null?'':v).replace(/[^0-9.-]+/g,'')) || 0;
+  const inr = n => '₹' + n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let consDetail = [], consSummary = [];
+
+  // find a "box" column in the sheet header (BOX / NO OF BOX / BOXES ...)
+  function boxKey(row){
+    return Object.keys(row).find(k => /box/i.test(k)) || null;
+  }
+
+  async function fillConsDropdowns(){
+    const sid = document.getElementById('sheetId').value.trim();
+    try{
+      const data = await fetchSheetData(sid);
+      const st = new Set(), states = new Set();
+      data.forEach(r=>{ if(r['STOCKIST NAME']) st.add(r['STOCKIST NAME']); if(r['STATE']) states.add(r['STATE']); });
+      const fill=(id,label,set)=>{
+        const el=document.getElementById(id);
+        el.innerHTML='<option value="">'+label+'</option>';
+        [...set].sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;el.appendChild(o);});
+      };
+      fill('consStockist','All Stockists',st);
+      fill('consState','All States',states);
+    }catch(e){ console.error(e); }
+  }
+  fillConsDropdowns();
+
+  function build(data){
+    const groups = {};
+    data.forEach(r=>{
+      const k = r['SR Ref No.'];
+      if(!k) return;
+      (groups[k] = groups[k] || []).push(r);
+    });
+    const detail = Object.entries(groups).map(([sr, rows])=>{
+      const f = rows[0];
+      const bk = boxKey(f);
+      let boxes = 0;
+      if(bk){ const r = rows.find(x=>num(x[bk])>0); boxes = r ? num(r[bk]) : 0; }
+      const d = parseDate(f['R.GEN DATE']);
+      return {
+        'R. GEN Date': (f['R.GEN DATE']||'').split(' ')[0],
+        'SR': sr,
+        'C. Inv date': f['C. INV DATE'] || '',
+        'C.Inv No.': f['C. INV NO.'] || '',
+        'Stockist Code': f['STOCKIST CODE'] || '',
+        'Stockist / Customer Name': f['STOCKIST NAME'] || '',
+        'State': f['STATE'] || '',
+        'Area': f['AREA'] || '',
+        'No. Of Box': boxes,
+        'No of Products': new Set(rows.map(x=>x['PRODUCT']).filter(Boolean)).size,
+        'No of Qtys': rows.reduce((a,x)=>a+num(x['QTY']),0),
+        'Value': rows.reduce((a,x)=>a+num(x['TOTAL']),0),
+        _d: d ? d.getTime() : 0
+      };
+    }).sort((a,b)=>a._d-b._d);
+
+    const sm = {};
+    detail.forEach(r=>{
+      const d = new Date(r._d);
+      const key = d.getFullYear()*100 + d.getMonth();
+      const month = r._d ? MON[d.getMonth()]+'-'+d.getFullYear() : 'Unknown';
+      const state = r['State'] || 'Unknown';
+      const id = key+'|'+state;
+      if(!sm[id]) sm[id] = {key, 'Month':month, 'State':state, 'SR Count':0, 'Boxes':0, 'Value':0};
+      sm[id]['SR Count']++; sm[id]['Boxes']+=r['No. Of Box']; sm[id]['Value']+=r['Value'];
+    });
+    const summary = Object.values(sm).sort((a,b)=>a.key-b.key || a.State.localeCompare(b.State));
+    return {detail, summary};
+  }
+
+  function tableHtml(headers, rows, rightCols, totals){
+    let h = '<div class="product-table-container"><table class="product-table" style="min-width:100%;"><thead><tr>'
+      + headers.map(x=>'<th>'+x+'</th>').join('') + '</tr></thead><tbody>';
+    rows.forEach(r=>{
+      h += '<tr>' + headers.map(c=>{
+        let v = r[c];
+        if(c==='Value') v = inr(v);
+        const al = rightCols.includes(c) ? ' style="text-align:right;"' : '';
+        return '<td'+al+'>'+(v===''||v==null?'-':v)+'</td>';
+      }).join('') + '</tr>';
+    });
+    if(totals){
+      h += '<tr style="font-weight:700;background:#f1f5f9;">' + headers.map((c,i)=>{
+        let v = totals[c]; if(c==='Value' && v!=null) v = inr(v);
+        const al = rightCols.includes(c) ? ' style="text-align:right;"' : '';
+        return '<td'+al+'>'+(v==null?(i===0?'TOTAL':''):v)+'</td>';
+      }).join('') + '</tr>';
+    }
+    return h + '</tbody></table></div>';
+  }
+
+  // Month-grouped summary: month shown once, states under it, month subtotal, grand total
+  function groupSummary(summary){
+    const out = []; const g = {};
+    summary.forEach(r=>{ (g[r.key] = g[r.key] || {month:r['Month'], rows:[]}).rows.push(r); });
+    const gt = {'SR Count':0,'Boxes':0,'Value':0};
+    Object.keys(g).sort((a,b)=>a-b).forEach(k=>{
+      const m = g[k]; const t = {'SR Count':0,'Boxes':0,'Value':0};
+      m.rows.forEach((r,i)=>{
+        out.push({type:'row', 'Month': i===0 ? m.month : '', 'State': r['State'], 'SR Count': r['SR Count'], 'Boxes': r['Boxes'], 'Value': r['Value']});
+        t['SR Count']+=r['SR Count']; t['Boxes']+=r['Boxes']; t['Value']+=r['Value'];
+      });
+      out.push({type:'sub', 'Month': m.month+' Total', 'State':'', ...t});
+      gt['SR Count']+=t['SR Count']; gt['Boxes']+=t['Boxes']; gt['Value']+=t['Value'];
+    });
+    out.push({type:'grand', 'Month':'GRAND TOTAL', 'State':'', ...gt});
+    return out;
+  }
+
+  function summaryHtml(summary){
+    const H = ['Month','State','SR Count','Boxes','Value'];
+    const th = 'style="background:#1e3a8a;color:#fff;padding:8px 12px;border:1px solid #cbd5e1;"';
+    let h = '<div class="product-table-container"><table style="border-collapse:collapse;min-width:60%;font-size:0.9rem;"><thead><tr>'
+      + H.map((c,i)=>'<th '+th.replace('"',i>=2?'"text-align:right;':'"')+'>'+c+'</th>').join('') + '</tr></thead><tbody>';
+    groupSummary(summary).forEach(r=>{
+      const bg = r.type==='grand' ? 'background:#1e3a8a;color:#fff;font-weight:700;' : r.type==='sub' ? 'background:#e0f2fe;font-weight:700;' : '';
+      h += '<tr>' + H.map(c=>{
+        const num = ['SR Count','Boxes','Value'].includes(c);
+        let v = r[c]; if(c==='Value') v = inr(v); else if(num) v = v.toLocaleString('en-IN');
+        const fw = (c==='Month' && r.type==='row' && v) ? 'font-weight:600;' : '';
+        return '<td style="padding:6px 12px;border:1px solid #cbd5e1;'+bg+fw+(num?'text-align:right;':'')+'">'+v+'</td>';
+      }).join('') + '</tr>';
+    });
+    return h + '</tbody></table></div>';
+  }
+
+  document.getElementById('consolidatedForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const sid = document.getElementById('sheetId').value.trim();
+    const fd = document.getElementById('consFromDate').value;
+    const td = document.getElementById('consToDate').value;
+    const stockist = document.getElementById('consStockist').value;
+    const state = document.getElementById('consState').value;
+    const out = document.getElementById('resultsSection');
+    hideAllExportButtons(); destroyCharts();
+    out.innerHTML = '<div class="loading">Building consolidated report...</div>';
+    try{
+      const data = await fetchSheetData(sid);
+      let from=null,to=null;
+      if(fd&&td){ from=new Date(fd); from.setHours(0,0,0,0); to=new Date(td); to.setHours(23,59,59,999); }
+      const filtered = data.filter(r=>{
+        if(stockist && r['STOCKIST NAME']!==stockist) return false;
+        if(state && r['STATE']!==state) return false;
+        if(from){
+          const d = parseDate(r['R.GEN DATE']);
+          if(!d || isNaN(d) || d<from || d>to) return false;
+        }
+        return true;
+      });
+      if(!filtered.length){ out.innerHTML='<div class="no-results">No records found for given filter.</div>'; return; }
+      const {detail, summary} = build(filtered);
+      consDetail = detail; consSummary = summary;
+
+      const H1 = ['R. GEN Date','SR','C. Inv date','C.Inv No.','Stockist Code','Stockist / Customer Name','State','Area','No. Of Box','No of Products','No of Qtys','Value'];
+      const H2 = ['Month','State','SR Count','Boxes','Value'];
+      const t1 = {'No. Of Box':detail.reduce((a,r)=>a+r['No. Of Box'],0),'No of Products':null,'No of Qtys':detail.reduce((a,r)=>a+r['No of Qtys'],0),'Value':detail.reduce((a,r)=>a+r['Value'],0)};
+      const t2 = {'SR Count':summary.reduce((a,r)=>a+r['SR Count'],0),'Boxes':summary.reduce((a,r)=>a+r['Boxes'],0),'Value':summary.reduce((a,r)=>a+r['Value'],0)};
+      const noBox = !boxKey(filtered[0]) ? '<div style="font-size:0.8rem;color:#b45309;margin-bottom:8px;">Note: no "Box" column found in the sheet; box counts show 0.</div>' : '';
+      const hd = 'font-size:1.2rem;color:#0f172a;padding:10px 0;border-bottom:2px solid #e5e7eb;margin:15px 0;';
+      out.innerHTML = noBox
+        + '<h2 style="'+hd+'">Summary (Month / State)</h2>' + summaryHtml(summary)
+        + '<h2 style="'+hd+'">Consolidated Report ('+detail.length+' SRs)</h2>' + tableHtml(H1, detail, ['No. Of Box','No of Products','No of Qtys','Value'], t1);
+      document.getElementById('exportConsBtn').style.display = 'block';
+    }catch(err){ out.innerHTML = '<div class="error">Error: '+err.message+'</div>'; }
+  });
+
+  document.getElementById('exportConsBtn').addEventListener('click', function(){
+    if(!consDetail.length){ alert('No data to export. Please run the report first.'); return; }
+    const H1 = ['R. GEN Date','SR','C. Inv date','C.Inv No.','Stockist Code','Stockist / Customer Name','State','Area','No. Of Box','No of Products','No of Qtys','Value'];
+    const H2 = ['Month','State','SR Count','Boxes','Value'];
+    const today = new Date().toISOString().slice(0,10);
+    const thin = {style:'thin',color:{rgb:'FFBFC7D5'}};
+    const border = {top:thin,bottom:thin,left:thin,right:thin};
+    const styHead = {font:{bold:true,color:{rgb:'FFFFFFFF'},sz:11},fill:{fgColor:{rgb:'FF1E3A8A'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border};
+    const sty = (kind,num,money) => {
+      const o = {border, alignment:{horizontal: num?'right':'left', vertical:'center'}};
+      if(kind==='sub'){ o.font={bold:true}; o.fill={fgColor:{rgb:'FFE0F2FE'}}; }
+      if(kind==='grand'){ o.font={bold:true,color:{rgb:'FFFFFFFF'}}; o.fill={fgColor:{rgb:'FF1E3A8A'}}; }
+      if(kind==='row' && !num) o.font={};
+      if(money) o.numFmt='#,##0.00'; else if(num) o.numFmt='#,##0';
+      return o;
+    };
+
+    // ---------- Summary sheet ----------
+    const gs = groupSummary(consSummary);
+    const aoa1 = [H2].concat(gs.map(r=>H2.map(c=>r[c])));
+    const ws1 = XLSX.utils.aoa_to_sheet(aoa1);
+    const merges = []; let start = null;
+    gs.forEach((r,i)=>{
+      const R = i+1;
+      H2.forEach((c,ci)=>{
+        const ref = XLSX.utils.encode_cell({r:R,c:ci});
+        if(!ws1[ref]) ws1[ref] = {t:'s',v:''};
+        const isNum = ci>=2;
+        ws1[ref].s = sty(r.type,isNum,c==='Value');
+        if(r.type==='row' && ci===0 && r['Month']) ws1[ref].s = Object.assign({}, ws1[ref].s, {font:{bold:true}, alignment:{horizontal:'left',vertical:'center'}});
+        if(isNum) ws1[ref].z = c==='Value' ? '#,##0.00' : '#,##0';
+      });
+      if(r.type==='grand') merges.push({s:{r:R,c:0},e:{r:R,c:1}});
+      if(r.type==='sub') merges.push({s:{r:R,c:0},e:{r:R,c:1}});
+    });
+    H2.forEach((c,ci)=>{ ws1[XLSX.utils.encode_cell({r:0,c:ci})].s = styHead; });
+    ws1['!merges'] = merges;
+    ws1['!cols'] = [{wch:16},{wch:24},{wch:11},{wch:11},{wch:18}];
+    ws1['!rows'] = [{hpt:22}];
+    ws1['!freeze'] = {xSplit:0,ySplit:1};
+
+    // ---------- Detailed sheet ----------
+    const sum = k => consDetail.reduce((a,r)=>a+r[k],0);
+    const tot = {'No. Of Box':sum('No. Of Box'),'No of Qtys':sum('No of Qtys'),'Value':sum('Value')};
+    const aoa2 = [H1].concat(consDetail.map(r=>H1.map(c=>r[c]))).concat([H1.map((c,i)=>i===0?'TOTAL':(tot[c]==null?'':tot[c]))]);
+    const ws2 = XLSX.utils.aoa_to_sheet(aoa2);
+    const numCols = {'No. Of Box':1,'No of Products':1,'No of Qtys':1,'Value':1};
+    const last = aoa2.length-1;
+    for(let R=1; R<=last; R++){
+      H1.forEach((c,ci)=>{
+        const ref = XLSX.utils.encode_cell({r:R,c:ci});
+        if(!ws2[ref]) ws2[ref] = {t:'s',v:''};
+        const isNum = !!numCols[c];
+        ws2[ref].s = sty(R===last?'grand':'row', isNum, c==='Value');
+        if(isNum) ws2[ref].z = c==='Value' ? '#,##0.00' : '#,##0';
+      });
+    }
+    H1.forEach((c,ci)=>{ ws2[XLSX.utils.encode_cell({r:0,c:ci})].s = styHead; });
+    ws2['!cols'] = [{wch:12},{wch:16},{wch:12},{wch:16},{wch:14},{wch:38},{wch:18},{wch:20},{wch:10},{wch:14},{wch:12},{wch:16}];
+    ws2['!rows'] = [{hpt:30}];
+    ws2['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0,c:0},e:{r:last-1,c:H1.length-1}})};
+    ws2['!freeze'] = {xSplit:0,ySplit:1};
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Detailed');
+    XLSX.writeFile(wb, 'SR_Consolidated_Report_'+today+'.xlsx');
+  });
+})();
+</script>
+
+<script>
+(function(){
+  const num = v => parseFloat(String(v==null?'':v).replace(/[^0-9.-]+/g,'')) || 0;
+  const inr = n => '₹' + n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtCell = (v,t) => v===''||v==null ? '' : typeof v==='string' ? v : t==='money' ? inr(v) : t==='int' ? Number(v).toLocaleString('en-IN') : t==='pct' ? v.toFixed(1)+'%' : v;
+  const XF = {money:'#,##0.00', int:'#,##0', pct:'0.0"%"'};
+
+  // fill State / Stockist dropdowns
+  async function fillDrops(pre){
+    try{
+      const data = await fetchSheetData(document.getElementById('sheetId').value.trim());
+      const st = new Set(), sk = new Set();
+      data.forEach(r=>{ if(r['STATE']) st.add(r['STATE']); if(r['STOCKIST NAME']) sk.add(r['STOCKIST NAME']); });
+      [[pre+'State','All States',st],[pre+'Stockist','All Stockists',sk]].forEach(([id,lbl,set])=>{
+        const el = document.getElementById(id); el.innerHTML = '<option value="">'+lbl+'</option>';
+        [...set].sort().forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; el.appendChild(o); });
+      });
+    }catch(e){ console.error(e); }
+  }
+
+  function filterRows(data, pre){
+    const fd = document.getElementById(pre+'From').value, td = document.getElementById(pre+'To').value;
+    const state = document.getElementById(pre+'State').value, stk = document.getElementById(pre+'Stockist').value;
+    let from=null,to=null;
+    if(fd&&td){ from=new Date(fd); from.setHours(0,0,0,0); to=new Date(td); to.setHours(23,59,59,999); }
+    return data.filter(r=>{
+      if(!r['SR Ref No.']) return false;
+      if(state && r['STATE']!==state) return false;
+      if(stk && r['STOCKIST NAME']!==stk) return false;
+      if(from){ const d=parseDate(r['R.GEN DATE']); if(!d||isNaN(d)||d<from||d>to) return false; }
+      return true;
+    });
+  }
+
+  // generic table: cols = [{h,t}], rows = array of objects keyed by h, opts.total = object, opts.heat = fn(row,col)->0..1|null
+  function tableHtml(cols, rows, opts){
+    opts = opts || {};
+    let h = '<div class="product-table-container"><table style="border-collapse:collapse;min-width:60%;font-size:0.88rem;"><thead><tr>'
+      + cols.map(c=>'<th style="background:#1e3a8a;color:#fff;padding:8px 12px;border:1px solid #cbd5e1;'+(c.t&&c.t!=='text'?'text-align:right;':'')+'">'+c.h+'</th>').join('') + '</tr></thead><tbody>';
+    const row = (r,total)=> '<tr>'+cols.map((c,i)=>{
+      let st = 'padding:6px 12px;border:1px solid #cbd5e1;'+(c.t&&c.t!=='text'?'text-align:right;':'');
+      if(total) st += 'background:#1e3a8a;color:#fff;font-weight:700;';
+      else if(opts.heat){ const t = opts.heat(r,c); if(t!=null){ const k=Math.min(1,t*0.85); const rr=Math.round(255-(255-37)*k), gg=Math.round(255-(255-99)*k), bb=Math.round(255-(255-235)*k); st+='background:rgb('+rr+','+gg+','+bb+');'+(k>0.55?'color:#fff;':''); } }
+      let v = r[c.h]; if(total && i===0 && (v==null||v==='')) v='TOTAL';
+      return '<td style="'+st+'">'+fmtCell(v,c.t)+'</td>';
+    }).join('')+'</tr>';
+    rows.forEach(r=>h+=row(r,false));
+    if(opts.total) h+=row(opts.total,true);
+    return h+'</tbody></table></div>';
+  }
+
+  function exportXlsx(file, sheet, cols, rows, opts){
+    opts = opts||{};
+    const thin={style:'thin',color:{rgb:'FFBFC7D5'}}, border={top:thin,bottom:thin,left:thin,right:thin};
+    const head={font:{bold:true,color:{rgb:'FFFFFFFF'}},fill:{fgColor:{rgb:'FF1E3A8A'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border};
+    const all = rows.concat(opts.total?[opts.total]:[]);
+    const aoa = [cols.map(c=>c.h)].concat(all.map((r,ri)=>cols.map((c,i)=>{ const v=r[c.h]; return (opts.total && ri===all.length-1 && i===0 && (v==null||v===''))?'TOTAL':(v==null?'':v); })));
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    all.forEach((r,ri)=>{
+      const isTot = opts.total && ri===all.length-1;
+      cols.forEach((c,ci)=>{
+        const ref = XLSX.utils.encode_cell({r:ri+1,c:ci});
+        if(!ws[ref]) ws[ref]={t:'s',v:''};
+        const isNum = c.t && c.t!=='text';
+        const st = {border, alignment:{horizontal:isNum?'right':'left',vertical:'center'}};
+        if(isNum) { st.numFmt = XF[c.t]; ws[ref].z = XF[c.t]; }
+        if(isTot){ st.font={bold:true,color:{rgb:'FFFFFFFF'}}; st.fill={fgColor:{rgb:'FF1E3A8A'}}; }
+        else if(opts.heat){ const t=opts.heat(r,c); if(t!=null){ const k=Math.min(1,t*0.85); const hx=n=>('0'+n.toString(16)).slice(-2).toUpperCase(); st.fill={fgColor:{rgb:'FF'+hx(Math.round(255-(255-37)*k))+hx(Math.round(255-(255-99)*k))+hx(Math.round(255-(255-235)*k))}}; if(k>0.55) st.font={color:{rgb:'FFFFFFFF'}}; } }
+        ws[ref].s = st;
+      });
+    });
+    cols.forEach((c,ci)=>{ ws[XLSX.utils.encode_cell({r:0,c:ci})].s = head; });
+    ws['!cols'] = cols.map(c=>({wch: Math.max(c.w||12, c.h.length+2)}));
+    ws['!rows'] = [{hpt:26}];
+    ws['!freeze'] = {xSplit:0,ySplit:1};
+    if(!opts.total || true) ws['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rows.length,c:cols.length-1}})};
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, sheet);
+    XLSX.writeFile(wb, file+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  }
+
+  // generic wiring
+  function wire(cfg){
+    let cur = null;
+    fillDrops(cfg.pre);
+    document.getElementById(cfg.form).addEventListener('submit', async function(e){
+      e.preventDefault();
+      const out = document.getElementById('resultsSection');
+      hideAllExportButtons(); destroyCharts();
+      out.innerHTML = '<div class="loading">Building report...</div>';
+      try{
+        const data = await fetchSheetData(document.getElementById('sheetId').value.trim());
+        const rows = filterRows(data, cfg.pre);
+        if(!rows.length){ out.innerHTML='<div class="no-results">No records found for given filter.</div>'; return; }
+        cur = cfg.build(rows);
+        const hd='font-size:1.2rem;color:#0f172a;padding:10px 0;border-bottom:2px solid #e5e7eb;margin:15px 0;';
+        out.innerHTML = '<h2 style="'+hd+'">'+cfg.title+' ('+cur.rows.length+')</h2>' + tableHtml(cur.cols, cur.rows, cur);
+        document.getElementById(cfg.btn).style.display = 'block';
+      }catch(err){ out.innerHTML='<div class="error">Error: '+err.message+'</div>'; }
+    });
+    document.getElementById(cfg.btn).addEventListener('click', function(){
+      if(!cur){ alert('Run the report first.'); return; }
+      exportXlsx(cfg.file, cfg.sheet, cur.cols, cur.rows, cur);
+    });
+  }
+
+  const share = (rows,total)=>{ let cum=0; rows.forEach(r=>{ r['% Share']= total? r['Value']/total*100 : 0; cum+=r['% Share']; r['Cum %']=cum; }); };
+
+  // 1. Stockist-wise
+  wire({pre:'stk', form:'stockistRankForm', btn:'exportStkBtn', title:'Stockist-wise Return Ranking', file:'Stockist_Wise_Report', sheet:'Stockist-wise',
+    build(rows){
+      const g={};
+      rows.forEach(r=>{
+        const k=(r['STOCKIST CODE']||'')+'|'+(r['STOCKIST NAME']||'');
+        const x = g[k] = g[k] || {'Stockist Code':r['STOCKIST CODE']||'','Stockist Name':r['STOCKIST NAME']||'','State':r['STATE']||'',srs:new Set(),prods:new Set(),'Qty':0,'Value':0};
+        x.srs.add(r['SR Ref No.']); if(r['PRODUCT']) x.prods.add(r['PRODUCT']); x['Qty']+=num(r['QTY']); x['Value']+=num(r['TOTAL']);
+      });
+      const list = Object.values(g).map(x=>({'Stockist Code':x['Stockist Code'],'Stockist Name':x['Stockist Name'],'State':x['State'],'SR Count':x.srs.size,'No of Products':x.prods.size,'Qty':x['Qty'],'Value':x['Value']})).sort((a,b)=>b['Value']-a['Value']);
+      const total = list.reduce((a,r)=>a+r['Value'],0);
+      list.forEach((r,i)=>r['Rank']=i+1); share(list,total);
+      const sr = new Set(rows.map(r=>r['SR Ref No.'])).size;
+      return {rows:list, cols:[{h:'Rank',t:'int',w:7},{h:'Stockist Code',w:14},{h:'Stockist Name',w:38},{h:'State',w:18},{h:'SR Count',t:'int',w:10},{h:'No of Products',t:'int',w:14},{h:'Qty',t:'int',w:10},{h:'Value',t:'money',w:16},{h:'% Share',t:'pct',w:10},{h:'Cum %',t:'pct',w:10}],
+        total:{'Rank':'','Stockist Code':'','Stockist Name':'','State':'','SR Count':sr,'No of Products':new Set(rows.map(r=>r['PRODUCT']).filter(Boolean)).size,'Qty':list.reduce((a,r)=>a+r['Qty'],0),'Value':total,'% Share':100,'Cum %':''}};
+    }});
+
+  // 2. Product-wise
+  wire({pre:'prd', form:'productRankForm', btn:'exportPrdBtn', title:'Product-wise Return Ranking', file:'Product_Wise_Report', sheet:'Product-wise',
+    build(rows){
+      const g={};
+      rows.forEach(r=>{
+        const k=r['PRODUCT']||'Unknown';
+        const x = g[k] = g[k] || {'Product':k,srs:new Set(),stk:new Set(),'Qty':0,'Value':0};
+        x.srs.add(r['SR Ref No.']); if(r['STOCKIST NAME']) x.stk.add(r['STOCKIST NAME']); x['Qty']+=num(r['QTY']); x['Value']+=num(r['TOTAL']);
+      });
+      const list = Object.values(g).map(x=>({'Product':x['Product'],'SR Count':x.srs.size,'No of Stockists':x.stk.size,'Qty':x['Qty'],'Value':x['Value']})).sort((a,b)=>b['Value']-a['Value']);
+      const total = list.reduce((a,r)=>a+r['Value'],0);
+      list.forEach((r,i)=>r['Rank']=i+1); share(list,total);
+      return {rows:list, cols:[{h:'Rank',t:'int',w:7},{h:'Product',w:40},{h:'SR Count',t:'int',w:10},{h:'No of Stockists',t:'int',w:15},{h:'Qty',t:'int',w:10},{h:'Value',t:'money',w:16},{h:'% Share',t:'pct',w:10},{h:'Cum %',t:'pct',w:10}],
+        total:{'Rank':'','Product':'','SR Count':new Set(rows.map(r=>r['SR Ref No.'])).size,'No of Stockists':new Set(rows.map(r=>r['STOCKIST NAME']).filter(Boolean)).size,'Qty':list.reduce((a,r)=>a+r['Qty'],0),'Value':total,'% Share':100,'Cum %':''}};
+    }});
+
+  // 3. State x Month matrix (heat-mapped)
+  wire({pre:'mat', form:'stateMatrixForm', btn:'exportMatBtn', title:'State × Month Matrix', file:'State_Month_Matrix', sheet:'State x Month',
+    build(rows){
+      const metric = document.getElementById('matMetric').value;
+      const t = metric==='Value' ? 'money' : 'int';
+      const months = {}, cell = {}, srSets = {};
+      rows.forEach(r=>{
+        const d = parseDate(r['R.GEN DATE']); if(!d||isNaN(d)) return;
+        const mk = d.getFullYear()*100+d.getMonth(); months[mk] = MON[d.getMonth()]+'-'+d.getFullYear();
+        const st = r['STATE']||'Unknown', key = st+'|'+mk;
+        cell[key] = cell[key]||0;
+        if(metric==='SR Count'){ (srSets[key]=srSets[key]||new Set()).add(r['SR Ref No.']); cell[key]=srSets[key].size; }
+        else cell[key] += num(metric==='Value'?r['TOTAL']:r['QTY']);
+      });
+      const mks = Object.keys(months).map(Number).sort((a,b)=>a-b);
+      const states = [...new Set(rows.map(r=>r['STATE']||'Unknown'))];
+      const stateTot = {}, monTot = {}; let grand=0;
+      let list = states.map(st=>{
+        const o = {'State':st}; let tot=0;
+        mks.forEach(mk=>{ const v=cell[st+'|'+mk]||0; o[months[mk]]=v; tot+=v; monTot[mk]=(monTot[mk]||0)+v; });
+        o['Total']=tot; grand+=tot; return o;
+      }).sort((a,b)=>b['Total']-a['Total']);
+      let max=0; list.forEach(o=>mks.forEach(mk=>{ if(o[months[mk]]>max) max=o[months[mk]]; }));
+      const totRow = {'State':'TOTAL','Total':metric==='SR Count' ? new Set(rows.map(r=>r['SR Ref No.'])).size : grand};
+      mks.forEach(mk=>{ totRow[months[mk]] = metric==='SR Count' ? new Set(rows.filter(r=>{const d=parseDate(r['R.GEN DATE']);return d&&!isNaN(d)&&d.getFullYear()*100+d.getMonth()===mk;}).map(r=>r['SR Ref No.'])).size : monTot[mk]; });
+      if(metric==='SR Count') list.forEach(o=>{ o['Total']=new Set(rows.filter(r=>(r['STATE']||'Unknown')===o['State']).map(r=>r['SR Ref No.'])).size; });
+      const cols = [{h:'State',w:22}].concat(mks.map(mk=>({h:months[mk],t:t,w:14})),[{h:'Total',t:t,w:16}]);
+      return {rows:list, cols:cols, total:totRow, heat:(r,c)=> (c.h==='State'||c.h==='Total'||!max) ? null : (r[c.h]? r[c.h]/max : 0)};
+    }});
+})();
+</script>
+
+
+
+<script>
+function toggleTM(e, btn){
+  e.stopPropagation();
+  const g = btn.closest('.tm-group'), will = !g.classList.contains('open');
+  document.querySelectorAll('.tm-group').forEach(x=>x.classList.remove('open'));
+  if(will) g.classList.add('open');
+}
+document.querySelectorAll('.tm-group').forEach(g=>{
+  g.addEventListener('mouseenter', ()=>{
+    if(document.querySelector('.tm-group.open') && !g.classList.contains('open')){
+      document.querySelectorAll('.tm-group').forEach(x=>x.classList.remove('open')); g.classList.add('open');
+    }
+  });
+});
+document.addEventListener('click', function(e){
+  const tb = e.target.closest('.tm-menu .tab-button');
+  if(tb){
+    document.querySelectorAll('.tm-group').forEach(x=>x.classList.remove('has-active'));
+    tb.closest('.tm-group').classList.add('has-active');
+    document.getElementById('tmCurrent').textContent = tb.textContent.trim();
+  }
+  document.querySelectorAll('.tm-group').forEach(x=>x.classList.remove('open'));
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.tm-group').forEach(x=>x.classList.remove('open')); });
+</script>
 </body>
 </html>
