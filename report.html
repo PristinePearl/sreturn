@@ -900,6 +900,23 @@ color:#1e293b;
         .dm-body { padding: 16px 20px 20px; overflow: auto; background: #f8fafc; }
         .dm-body .result-card { margin: 0; box-shadow: none; }
         @media (max-width: 768px) { #detailsModalOverlay { padding: 8px; } .dm-header { flex-wrap: wrap; padding: 12px; } .dm-body { padding: 10px; } }
+
+        /* --- UI refresh: richer menu, quick ranges, focus mode, sticky table headers --- */
+        .tm-head, .tm-link { font-size: 0.92rem; }
+        .tm-menu { min-width: 310px; padding: 8px; }
+        .tm-menu .tab-button { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+        .mi-ico { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; background: #eef2ff; border-radius: 8px; flex-shrink: 0; }
+        .tm-menu .tab-button.active .mi-ico { background: #bae6fd; }
+        .mi-txt { display: flex; flex-direction: column; gap: 1px; }
+        .mi-txt b { font-size: 0.9rem; font-weight: 600; }
+        .mi-txt small { font-size: 0.74rem; color: #64748b; font-weight: 400; }
+        .tm-focus { margin-left: 8px; padding: 6px 12px; border: 1px solid rgba(255,255,255,.3); border-radius: 6px; background: rgba(255,255,255,.1); color: #fff; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+        .tm-focus:hover { background: rgba(255,255,255,.22); }
+        body.focus-mode .left-panel { display: none; }
+        .right-panel .product-table-container { max-height: calc(100vh - 250px); overflow: auto; }
+        body.focus-mode .right-panel .product-table-container { max-height: calc(100vh - 110px); }
+        .right-panel .product-table thead th { position: sticky; top: 0; z-index: 2; }
+        .quick-range select { border-color: #0891b2; background: #ecfeff; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -5060,11 +5077,71 @@ document.addEventListener('click', function(e){
   if(tb){
     document.querySelectorAll('.tm-group').forEach(x=>x.classList.remove('has-active'));
     tb.closest('.tm-group').classList.add('has-active');
-    document.getElementById('tmCurrent').textContent = tb.textContent.trim();
+    document.getElementById('tmCurrent').textContent = (tb.dataset.label || tb.textContent.trim());
   }
   document.querySelectorAll('.tm-group').forEach(x=>x.classList.remove('open'));
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.tm-group').forEach(x=>x.classList.remove('open')); });
+</script>
+
+<script>
+(function(){
+  const META = {
+    srSearch:['🔍','Find one SR by SR / invoice no.'], againstInv:['🧾','Returns matched against invoices'],
+    dateStockist:['📜','SR cards by date & stockist'], consolidated:['🗂️','One row per SR + monthly summary'],
+    expiryQuality:['⚠️','Expiry & quality returns'], productAnalysis:['📦','Product & batch analysis'],
+    stockistRank:['🏪','Rank stockists by value'], productRank:['💊','Rank products by value'],
+    stateMatrix:['🗓️','State × month heat map'], graphicalReports:['📊','Charts by product & stockist'],
+    aiAnalysis:['📈','KPIs and monthly trend']
+  };
+  document.querySelectorAll('.tm-menu .tab-button').forEach(b=>{
+    const m = (b.getAttribute('onclick')||'').match(/'(\w+)'\)/);
+    if(!m || !META[m[1]]) return;
+    const label = b.textContent.trim(); b.dataset.label = label;
+    b.innerHTML = '<span class="mi-ico">'+META[m[1]][0]+'</span><span class="mi-txt"><b>'+label+'</b><small>'+META[m[1]][1]+'</small></span>';
+  });
+
+  // Quick date range selector on every form that has From/To dates
+  const f = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  function range(k){
+    const n = new Date(), y = n.getFullYear(), m = n.getMonth();
+    const fy = m>=3 ? y : y-1;
+    switch(k){
+      case 'today': return [n,n];
+      case 'yesterday': { const d=new Date(y,m,n.getDate()-1); return [d,d]; }
+      case 'month': return [new Date(y,m,1),n];
+      case 'lastmonth': return [new Date(y,m-1,1), new Date(y,m,0)];
+      case '3m': return [new Date(y,m-2,1),n];
+      case 'fy': return [new Date(fy,3,1),n];
+      case 'lastfy': return [new Date(fy-1,3,1), new Date(fy,2,31)];
+      default: return null;
+    }
+  }
+  document.querySelectorAll('.search-form').forEach(form=>{
+    const d = form.querySelectorAll('input[type="date"]');
+    if(d.length < 2) return;
+    const g = document.createElement('div'); g.className = 'form-group quick-range';
+    g.innerHTML = '<label>Quick Range</label><select><option value="">Custom</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="month">This Month</option><option value="lastmonth">Last Month</option><option value="3m">Last 3 Months</option><option value="fy">This Financial Year</option><option value="lastfy">Last Financial Year</option><option value="clear">Clear Dates</option></select>';
+    g.querySelector('select').addEventListener('change', function(){
+      const r = range(this.value);
+      d[0].value = r ? f(r[0]) : ''; d[1].value = r ? f(r[1]) : '';
+      if(this.value==='clear') this.value = '';
+      d.forEach(i=>i.dispatchEvent(new Event('change',{bubbles:true})));
+    });
+    d.forEach(i=>i.addEventListener('input', ()=>{ g.querySelector('select').value = ''; }));
+    d[0].closest('.form-group').before(g);
+  });
+
+  // Focus mode: hide the filter bar to give reports the whole screen
+  const bar = document.getElementById('topMenubar');
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'tm-focus'; btn.textContent = '⛶ Hide filters';
+  btn.addEventListener('click', ()=>{
+    const on = document.body.classList.toggle('focus-mode');
+    btn.textContent = on ? '⛶ Show filters' : '⛶ Hide filters';
+  });
+  bar.appendChild(btn);
+})();
 </script>
 </body>
 </html>
